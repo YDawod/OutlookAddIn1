@@ -19,3 +19,4 @@ c:\users\jason ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookA
 c:\users\jason ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\obj\Debug\OutlookAddIn1.csproj.GenerateResource.Cache
 c:\users\jason ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\obj\Debug\OutlookAddIn1.dll
 c:\users\jason ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\obj\Debug\OutlookAddIn1.pdb
+C:\Users\Jason Ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\obj\Debug\OutlookAddIn1.csprojResolveAssemblyReference.cache
