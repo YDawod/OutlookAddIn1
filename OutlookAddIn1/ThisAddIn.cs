@@ -95,7 +95,7 @@ namespace OutlookAddIn1
                     if (reader.HasRows)
                     {
                         reader.Read();
-                        
+
                         product.Name = Convert.ToString(reader["Name"]);
                         product.UrlNumber = Convert.ToString(reader["UrlNumber"]);
                         product.ItemNumber = Convert.ToString(reader["ItemNumber"]);
@@ -130,12 +130,12 @@ namespace OutlookAddIn1
                     iEnd = body.IndexOf("</td>", iStart);
                     string endTime = body.Substring(iStart - 1, iEnd - iStart + 1);
 
-                    MessageBox.Show(id + "|" + price + "|" + endTime);
+                    //MessageBox.Show(id + "|" + price + "|" + endTime);
 
                     sqlString = "INSERT INTO eBay_CurrentListings (Name, eBayItemNumber, eBayListingPrice, " +
-                                "eBayListingDT, CostcoUrlNumber, CostcoUrl, Details, Specification, ImageLink) " +
+                                "eBayListingDT, CostcoUrlNumber, CostcoUrl, eBayDescription, ImageLink) " +
                                 "VALUES ('" + product.Name + "', '" + id + "', '" + price + "', '" + DateTime.Now.AddDays(10).ToString() + "', '" +
-                                product.UrlNumber + "', '" + product.Url + "', '" + product.Details + "', '" +
+                                product.UrlNumber + "', '" + product.Url + "', '" +
                                 product.Specification + "', '" + product.ImageLink + "')";
 
                     cmd.CommandText = sqlString;
@@ -143,16 +143,27 @@ namespace OutlookAddIn1
 
                     cn.Close();
                 }
+                else if (mail.TaskSubject.IndexOf("Relist") == 0)
+                {
+                    string subject = mail.Subject;
 
-                //if (mail.MessageClass == "IPM.Note" &&
-                //           mail.Subject.ToUpper().Contains(filter.ToUpper()))
-                //{
-                //    mail.Move(outlookNameSpace.GetDefaultFolder(
-                //        Microsoft.Office.Interop.Outlook.
-                //        OlDefaultFolders.olFolderJunk));
-                //}
-            }
+                    string productName = subject.Substring(7, subject.Length - 7);
 
+                    SqlConnection cn = new SqlConnection(connectionString);
+                    SqlCommand cmd = new SqlCommand();
+                    cmd.Connection = cn;
+
+                    Product product = new Product();
+
+                    cn.Open();
+
+                    string sqlString = "DELETE FROM eBay_CurrentListings WHERE Name = '" + productName + "'";
+                    cmd.CommandText = sqlString;
+                    cmd.ExecuteNonQuery();
+
+                    cn.Close();
+                }
+            } 
         }
 
         void Inspectors_NewInspector(Microsoft.Office.Interop.Outlook.Inspector Inspector)
