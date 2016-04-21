@@ -7,6 +7,7 @@ using Outlook = Microsoft.Office.Interop.Outlook;
 using Office = Microsoft.Office.Core;
 using System.Windows.Forms;
 using System.Data.SqlClient;
+using System.IO;
 
 namespace OutlookAddIn1
 {
@@ -162,6 +163,23 @@ namespace OutlookAddIn1
                     cmd.ExecuteNonQuery();
 
                     cn.Close();
+                }
+                else if (mail.TaskSubject.Contains("Instant payment received"))
+                {
+                    string body = mail.HTMLBody;
+                    body = body.Replace("\n", "");
+                    body = body.Replace("\t", "");
+                    body = body.Replace("\\", "");
+
+                    string path = @"c:\temp\MyTest.html";
+
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+
+                    File.WriteAllText(path, body);
+
                 }
             } 
         }
