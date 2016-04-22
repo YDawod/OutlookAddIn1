@@ -171,17 +171,148 @@ namespace OutlookAddIn1
                     body = body.Replace("\t", "");
                     body = body.Replace("\\", "");
 
-                    string path = @"c:\temp\MyTest.html";
+                    ProcessPaymentReceivedEmail(body);
 
-                    if (File.Exists(path))
-                    {
-                        File.Delete(path);
-                    }
+                    //string path = @"c:\temp\MyTest.html";
 
-                    File.WriteAllText(path, body);
+                    //if (File.Exists(path))
+                    //{
+                    //    File.Delete(path);
+                    //}
+
+                    //File.WriteAllText(path, body);
 
                 }
             } 
+        }
+
+        private void ProcessPaymentReceivedEmail(string html)
+        {
+            string body = SubstringInBetween(html, "<body", @"</body>", true, true);
+
+            // TransactionID
+            string stTime = SubstringEndBack(body, "PDT", ">", false, true);
+
+            string stTransactionID = SubstringInBetween(body, "Transaction ID:", "</a>", true, true);
+
+            stTransactionID = SubstringEndBack(stTransactionID, "</a>", ">", false, false);
+
+            // Buyer Name
+            string stBuyer = SubstringInBetween(body, "Buyer", @"</a>", true, true);
+
+            string stFullName = SubstringInBetween(stBuyer, "<br>", "<br>", false, false);
+
+            stBuyer = stBuyer.Replace("<br>" + stFullName + "<br>", "");
+
+            string stUserID = SubstringInBetween(stBuyer, @"</b>", "<br>", false, false);
+
+            string stUserEmail = SubstringEndBack(stBuyer, @"</a>", ">", false, false);
+
+            // Shipping Address
+            string stShippingAddress = SubstringInBetween(body, "Shipping address", "<o:p>", true, false);
+
+            string stShippingName = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
+
+            stShippingAddress = stShippingAddress.Replace("<br>" + stShippingName, "");
+
+            string stShippingAddress1 = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
+
+            stShippingAddress = stShippingAddress.Replace("<br>" + stShippingAddress1, "");
+
+            string stShippingAddress2 = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
+
+            string stShippingCity = stShippingAddress2.Substring(0, stShippingAddress2.IndexOf(","));
+
+            string stShippingState = SubstringInBetween(stShippingAddress2, "&nbsp;", "&nbsp;", false, false);
+
+            stShippingAddress2 = stShippingAddress2.Replace(stShippingCity, "");
+            stShippingAddress2 = stShippingAddress2.Replace(stShippingState, "");
+            stShippingAddress2 = stShippingAddress2.Replace("&nbsp;", "");
+            stShippingAddress2 = stShippingAddress2.Replace(",", "");
+
+            string stShippingZip = stShippingAddress2;
+
+            // Buyer note
+            string stBuyerNote = SubstringInBetween(body, "Note to seller", "<o:p>", false, true);
+            stBuyerNote = SubstringInBetween(stBuyerNote, "<br>", "<o:p>", false, false);
+
+            // Item 
+            string stItemNum = SubstringInBetween(body, "Item#", "<o:p>", false, false);
+            stItemNum = stItemNum.Trim();
+
+            string stItemName = SubstringInBetween(body, "<a href='http://cgi.ebay.com/ws/eBayISAPI.dll?ViewItem&amp;item=" + stItemNum + "' target='_blank'>", @"</a>", false, false);
+
+            // Amount
+            string stAmount = SubstringInBetween(body, "Item# " + stItemNum, @"</table>", false, false);
+
+            stAmount = TrimTags(stAmount);
+
+            string stUnitePrice = stAmount.Substring(0, stAmount.IndexOf("<"));
+
+            stAmount = stAmount.Substring(stUnitePrice.Length);
+
+            stAmount = TrimTags(stAmount);
+
+            string stQuatity = stAmount.Substring(0, stAmount.IndexOf("<"));
+
+            stAmount = stAmount.Substring(stQuatity.Length);
+
+            stAmount = TrimTags(stAmount);
+
+            string stTotal = stAmount.Substring(0, stAmount.IndexOf("<"));
+        }
+
+        private string SubstringInBetween(string input, string start, string end, bool bIncludeStart, bool bIncludeEnd)
+        {
+            int iStart = input.IndexOf(start);
+
+            if (bIncludeStart)
+                input = input.Substring(iStart);
+            else
+                input = input.Substring(iStart + start.Length);
+
+            int iEnd = input.IndexOf(end);
+
+            if (bIncludeEnd)
+                input = input.Substring(0, iEnd + end.Length);
+            else
+                input = input.Substring(0, iEnd);
+
+            return input;
+        }
+
+        private string SubstringEndBack(string input, string end, string start, bool bIncludeStart, bool bIncludeEnd)
+        {
+            int iEnd = input.IndexOf(end);
+
+            if (bIncludeEnd)
+                input = input.Substring(0, iEnd + end.Length);
+            else
+                input = input.Substring(0, iEnd);
+
+            int iStart = input.LastIndexOf(">");
+
+            if (bIncludeStart)
+                input = input.Substring(iStart, input.Length - iStart);
+            else
+                input = input.Substring(iStart + start.Length, input.Length - iStart - start.Length);
+
+            return input;
+        }
+
+        private string TrimTags(string input)
+        {
+            int iStart = input.IndexOf("<");
+            string stTag;
+            input = input.Substring(iStart);
+
+            while (input.IndexOf("<") == 0)
+            {
+                stTag = SubstringInBetween(input, "<", ">", true, true);
+                input = input.Substring(stTag.Length);
+            }
+
+            return input;
         }
 
         void Inspectors_NewInspector(Microsoft.Office.Interop.Outlook.Inspector Inspector)
