@@ -181,9 +181,163 @@ namespace OutlookAddIn1
                     //}
 
                     //File.WriteAllText(path, body);
+                }
+                else if (mail.TaskSubject.IndexOf("Your eBay item sold!") == 0)
+                {
+                    string body = mail.HTMLBody;
+                    body = body.Replace("\n", "");
+                    body = body.Replace("\t", "");
+                    body = body.Replace("\\", "");
+                    body = body.Replace("\"", "'");
 
+                    ProcessItemSoldEmail(mail.TaskSubject, body);
+
+                    //string path = @"c:\temp\MyTest.html";
+
+                    //if (File.Exists(path))
+                    //{
+                    //    File.Delete(path);
+                    //}
+
+                    //File.WriteAllText(path, body);
                 }
             } 
+        }
+
+        private void ProcessItemSoldEmail(string subject, string body)
+        {
+            string stItemNum = SubstringInBetween(subject, "(", ")", false, false);
+
+            subject = subject.Replace("(" + stItemNum + ")", "");
+            subject = subject.Replace("Your eBay item sold!", "");
+
+            string stItemName = subject.Trim();
+
+            string stUrl = SubstringEndBack(body, ">" + stItemName, "<a href=", false, false);
+
+            stUrl = SubstringInBetween(stUrl, "'", "'", false, false);
+
+            string stEndTime = SubstringInBetween(body, "End time:", "PDT", false, true);
+
+            stEndTime = SubstringEndBack(stEndTime, "PDT", ">", false, true);
+
+            string correctedTZ = stEndTime.Replace("PDT", "-0700");
+            DateTime dt = Convert.ToDateTime(correctedTZ);
+
+            string stPrice = SubstringInBetween(body, "Sale price:", "Quantity:", false, false);
+
+            stPrice = SubstringInBetween(stPrice, "$", "<", false, false);
+
+            string stQuantity = SubstringInBetween(body, "Quantity:", "Quantity sold:", false, false);
+
+            stQuantity = TrimTags(stQuantity);
+
+            stQuantity = stQuantity.Substring(0, stQuantity.IndexOf("<"));
+
+            string stQuantitySold = SubstringInBetween(body, "Quantity sold:", "Quantity remaining:", false, false);
+
+            stQuantitySold = TrimTags(stQuantitySold);
+
+            stQuantitySold = stQuantitySold.Substring(0, stQuantitySold.IndexOf("<"));
+
+            string stQuantityRemaining = SubstringInBetween(body, "Quantity remaining:", "Buyer:", false, false);
+
+            stQuantityRemaining = TrimTags(stQuantityRemaining);
+
+            stQuantityRemaining = stQuantityRemaining.Substring(0, stQuantityRemaining.IndexOf("<"));
+
+            string stBuyerName = SubstringInBetween(body, "Buyer:", "<div>", false, false);
+
+            stBuyerName = TrimTags(stBuyerName);
+
+            stBuyerName = stBuyerName.Substring(0, stBuyerName.IndexOf("<"));
+
+            string stBuyerId = SubstringInBetween(body, stBuyerName, "(<a href='mailto", false, true);
+
+            stBuyerId = TrimTags(stBuyerId);
+
+            stBuyerId = stBuyerId.Substring(0, stBuyerId.IndexOf("(<a href='mailto"));
+
+            stBuyerId = stBuyerId.Trim();
+
+            string stBuyerEmail = SubstringInBetween(body, "(<a href='mailto:", "'", false, false);
+
+
+            // db stuff
+            SqlConnection cn = new SqlConnection(connectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = cn;
+
+            string sqlString = @"SELECT * FROM eBay_CurrentListings WHERE eBayItemNumber = " + stItemNum;
+
+            eBayListingProduct eBayProduct = new eBayListingProduct();
+
+            cn.Open();
+            cmd.CommandText = sqlString;
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                reader.Read();
+
+                eBayProduct.Name = Convert.ToString(reader["Name"]);
+                eBayProduct.eBayListingName = Convert.ToString(reader["eBayListingName"]);
+                eBayProduct.eBayCategoryID = Convert.ToString(reader["eBayCategoryID"]);
+                eBayProduct.eBayItemNumber = Convert.ToString(reader["eBayItemNumber"]);
+                eBayProduct.eBayListingPrice = Convert.ToDecimal(reader["eBayListingPrice"]);
+                eBayProduct.eBayDescription = Convert.ToString(reader["eBayDescription"]);
+                eBayProduct.eBayListingDT = Convert.ToDateTime(reader["eBayListingDT"]);
+                eBayProduct.eBayUrl = Convert.ToString(reader["eBayUrl"]);
+                eBayProduct.CostcoUrlNumber = Convert.ToString(reader["CostcoUrlNumber"]);
+                eBayProduct.CostcoItemNumber = Convert.ToString(reader["CostcoItemNumber"]);
+                eBayProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
+                eBayProduct.CostcoPrice = Convert.ToDecimal(reader["CostcoPrice"]);
+                eBayProduct.ImageLink = Convert.ToString(reader["ImageLink"]);
+            }
+            reader.Close();
+
+            // check exist
+
+            bool bExist = false;
+
+            sqlString = "SELECT * FROM eBay_SoldTransactions WHERE eBayItemNumber = " + stItemNum;
+            cmd.CommandText = sqlString;
+            reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+                bExist = true;
+            reader.Close();
+
+            if (!bExist)
+            {
+                sqlString = @"INSERT INTO eBay_SoldTransactions 
+                              (eBayItemNumber, eBaySoldDateTime, eBayItemName, eBayUrl, eBayPrice, eBayListingQuality, eBaySoldQuality, eBayRemainingQuality, 
+                               BuyerName, BuyerID, BuyerEmail, CostcoUrlNumber, CostcoUrl, CostcoPrice)
+                              VALUES (@_eBayItemNumber, @_eBaySoldDateTime, @_eBayItemName, @_eBayUrl, @_eBayPrice, @_eBayListingQuality, @_eBaySoldQuality, @_eBayRemainingQuality, 
+                               @_BuyerName, @_BuyerID, @_BuyerEmail, @_CostcoUrlNumber, @_CostcoUrl, @_CostcoPrice)";
+
+                cmd.CommandText = sqlString;
+                cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
+                cmd.Parameters.AddWithValue("@_eBaySoldDateTime", dt);
+                cmd.Parameters.AddWithValue("@_eBayItemName", stItemName);
+                cmd.Parameters.AddWithValue("@_eBayUrl", stUrl);
+                cmd.Parameters.AddWithValue("@_eBayPrice", Convert.ToDecimal(stPrice));
+                cmd.Parameters.AddWithValue("@_eBayListingQuality", Convert.ToInt16(stQuantity));
+                cmd.Parameters.AddWithValue("@_eBaySoldQuality", Convert.ToInt16(stQuantitySold));
+                cmd.Parameters.AddWithValue("@_eBayRemainingQuality", Convert.ToInt16(stQuantityRemaining));
+                cmd.Parameters.AddWithValue("@_BuyerName", stBuyerName);
+                cmd.Parameters.AddWithValue("@_BuyerID", stBuyerId);
+                cmd.Parameters.AddWithValue("@_BuyerEmail", stBuyerEmail);
+                cmd.Parameters.AddWithValue("@_CostcoUrlNumber", eBayProduct.CostcoUrlNumber);
+                cmd.Parameters.AddWithValue("@_CostcoUrl", eBayProduct.CostcoUrl);
+                cmd.Parameters.AddWithValue("@_CostcoPrice", eBayProduct.CostcoPrice);
+
+                cmd.ExecuteNonQuery();
+            }
+            else
+            {
+
+            }
+
+            cn.Close();
         }
 
         private void ProcessPaymentReceivedEmail(string html)
@@ -192,6 +346,8 @@ namespace OutlookAddIn1
 
             // TransactionID
             string stTime = SubstringEndBack(body, "PDT", ">", false, true);
+
+            DateTime dtTime = Convert.ToDateTime(stTime.Replace("PDT", "-0700"));
 
             string stTransactionID = SubstringInBetween(body, "Transaction ID:", "</a>", true, true);
 
@@ -235,6 +391,7 @@ namespace OutlookAddIn1
             // Buyer note
             string stBuyerNote = SubstringInBetween(body, "Note to seller", "<o:p>", false, true);
             stBuyerNote = SubstringInBetween(stBuyerNote, "<br>", "<o:p>", false, false);
+            stBuyerNote = stBuyerNote.Replace("The buyer hasn't sent a note.", "");
 
             // Item 
             string stItemNum = SubstringInBetween(body, "Item#", "<o:p>", false, false);
@@ -248,6 +405,9 @@ namespace OutlookAddIn1
             stAmount = TrimTags(stAmount);
 
             string stUnitePrice = stAmount.Substring(0, stAmount.IndexOf("<"));
+            stUnitePrice = stUnitePrice.Replace("$", "");
+            stUnitePrice = stUnitePrice.Replace("USD", "");
+            stUnitePrice = stUnitePrice.Trim();
 
             stAmount = stAmount.Substring(stUnitePrice.Length);
 
@@ -260,6 +420,12 @@ namespace OutlookAddIn1
             stAmount = TrimTags(stAmount);
 
             string stTotal = stAmount.Substring(0, stAmount.IndexOf("<"));
+            stTotal = stTotal.Replace("$", "");
+            stTotal = stTotal.Replace("USD", "");
+            stTotal = stTotal.Trim();
+
+            // db stuff
+
         }
 
         private string SubstringInBetween(string input, string start, string end, bool bIncludeStart, bool bIncludeEnd)
