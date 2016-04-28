@@ -8,6 +8,8 @@ using Office = Microsoft.Office.Core;
 using System.Windows.Forms;
 using System.Data.SqlClient;
 using System.IO;
+using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium;
 
 namespace OutlookAddIn1
 {
@@ -201,11 +203,34 @@ namespace OutlookAddIn1
 
                     //File.WriteAllText(path, body);
                 }
+
+                else if (mail.TaskSubject.IndexOf("Your Costco.com Order Was Received") == 0)
+                {
+                    string body = mail.HTMLBody;
+                    body = body.Replace("\n", "");
+                    body = body.Replace("\t", "");
+                    body = body.Replace("\\", "");
+                    body = body.Replace("\"", "'");
+
+                    body = @"<html><head></head><body>" + body + @"</body></html>";
+
+                    File.WriteAllText(@"C:/temp/temp.html", body);
+
+                    ProcessCostcoOrderEmail(body);
+                }
             } 
+        }
+
+        private void ProcessCostcoOrderEmail(string body)
+        {
+
+
         }
 
         private void ProcessItemSoldEmail(string subject, string body)
         {
+            //
+
             string stItemNum = SubstringInBetween(subject, "(", ")", false, false);
 
             subject = subject.Replace("(" + stItemNum + ")", "");
@@ -262,6 +287,29 @@ namespace OutlookAddIn1
 
             string stBuyerEmail = SubstringInBetween(body, "(<a href='mailto:", "'", false, false);
 
+            // Generate PDF for email
+            File.WriteAllText(@"C:\temp\temp.html", body);
+
+            FirefoxProfile profile = new FirefoxProfile();
+            profile.SetPreference("print.always_print_silent", true);
+
+            IWebDriver driver = new FirefoxDriver(profile);
+
+            driver.Navigate().GoToUrl(@"file:///C:/temp/temp.html");
+
+            IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+
+            js.ExecuteScript("window.print();");
+
+            driver.Dispose();
+
+            // Process files
+            string[] files = Directory.GetFiles(@"C:\temp\tempPDF");
+
+            string sourceFile = files[0];
+
+
+            //C:\temp\tempPDF
 
             // db stuff
             SqlConnection cn = new SqlConnection(connectionString);
