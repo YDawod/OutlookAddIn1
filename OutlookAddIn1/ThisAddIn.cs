@@ -174,15 +174,6 @@ namespace OutlookAddIn1
                     body = body.Replace("\\", "");
 
                     ProcessPaymentReceivedEmail(body);
-
-                    //string path = @"c:\temp\MyTest.html";
-
-                    //if (File.Exists(path))
-                    //{
-                    //    File.Delete(path);
-                    //}
-
-                    //File.WriteAllText(path, body);
                 }
                 else if (mail.TaskSubject.IndexOf("Your eBay item sold!") == 0)
                 {
@@ -193,18 +184,9 @@ namespace OutlookAddIn1
                     body = body.Replace("\"", "'");
 
                     ProcessItemSoldEmail(mail.TaskSubject, body);
-
-                    //string path = @"c:\temp\MyTest.html";
-
-                    //if (File.Exists(path))
-                    //{
-                    //    File.Delete(path);
-                    //}
-
-                    //File.WriteAllText(path, body);
                 }
 
-                else if (mail.TaskSubject.IndexOf("Your Costco.com Order Was Received") == 0)
+                else if (mail.TaskSubject.Contains("Your Costco.com Order Was Received"))
                 {
                     string body = mail.HTMLBody;
                     body = body.Replace("\n", "");
@@ -214,8 +196,6 @@ namespace OutlookAddIn1
 
                     body = @"<html><head></head><body>" + body + @"</body></html>";
 
-                    File.WriteAllText(@"C:/temp/temp.html", body);
-
                     ProcessCostcoOrderEmail(body);
                 }
             } 
@@ -223,14 +203,147 @@ namespace OutlookAddIn1
 
         private void ProcessCostcoOrderEmail(string body)
         {
+            body = body.Replace("\r", "");
+            body = body.Replace("\t", "");
+            body = body.Replace("\n", "");
+            string stOrderNumber = SubstringInBetween(body, "Order Number:</td>", "</td>", false, true);
+            stOrderNumber = SubstringEndBack(stOrderNumber, "</td>", ">", false, false);
+            stOrderNumber = stOrderNumber.Trim();
+
+            string stDatePlaced = SubstringInBetween(body, "Date Placed:</td>", "</td>", false, true);
+            stDatePlaced = SubstringEndBack(stDatePlaced, "</td>", ">", false, false);
+            stDatePlaced = stDatePlaced.Trim();
+
+            string stWorking = SubstringInBetween(body, "Item Total", "Shipping &amp; Terms", false, false);
+            stWorking = TrimTags(stWorking);
+
+            string stQuatity = stWorking.Substring(0, stWorking.IndexOf("<"));
+            stQuatity = stQuatity.Trim();
+
+            stWorking = stWorking.Substring(stQuatity.Length);
+            stWorking = TrimTags(stWorking);
+            string stProductName = stWorking.Substring(0, stWorking.IndexOf("<"));
+            stProductName = stProductName.Trim();
+
+            string stItemNum = stProductName.Substring(stProductName.IndexOf("Item#"));
+
+            stItemNum = stItemNum.Replace("Item#", "");
+            stItemNum = stItemNum.Trim();
+
+            string stShipping = SubstringInBetween(body, "Shipping Address", "Note:", false, false);
+
+            string stBuyerName = TrimTags(stShipping);
+
+            // Generate PDF for email
+            string destinationFileName = DateTime.Now.ToString("yyyyMMddHHmmss") + "_" + stOrderNumber;
+
+            File.WriteAllText(@"C:\temp\" + @"\" + destinationFileName + ".html", body);
+
+            FirefoxProfile profile = new FirefoxProfile();
+            profile.SetPreference("print.always_print_silent", true);
+
+            IWebDriver driver = new FirefoxDriver(profile);
+
+            driver.Navigate().GoToUrl(@"file:///" + @"C:\temp\" + @"\" + destinationFileName + ".html");
+
+            IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+
+            js.ExecuteScript("window.print();");
+
+            driver.Dispose();
+
+            System.Threading.Thread.Sleep(10000);
+
+            // Process files
+            string sourceFileName = @"C:\temp\tempPDF\file__C__temp_" + destinationFileName + @"\" + "file_C_temp_" + destinationFileName + ".pdf";
+
+            File.Move(sourceFileName, @"C:\temp\CostcoOrderEmails\" + destinationFileName + ".pdf");
+
+            File.Delete(@"C:\temp\" + destinationFileName + ".html");
+            Directory.Delete(@"C:\temp\tempPDF\file__C__temp_" + destinationFileName);
+
+            // db stuff
+            string sqlString;
+            bool bExist = false;
+
+            SqlConnection cn = new SqlConnection(connectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = cn;
+            cn.Open();
+
+            if (stItemNum != "")
+            {
+                sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemNumber = @_costcoItemNumber 
+                                AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
+
+                cmd.CommandText = sqlString;
+                cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
+                cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
+
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.HasRows)
+                {
+                    bExist = true;
+                }
+                reader.Close();
+
+                if (bExist)
+                {
+                    sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
+                                CostcoOrderEmailPdf = @_costcoOrderEmailPdf
+                                WHERE WHERE CostcoItemNumber = @_costcoItemNumber 
+                                AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
+
+                    cmd.CommandText = sqlString;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
+                    cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
+                    cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
+                    cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            else
+            {
+                sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemName = @_costcoItemName
+                                AND CostcoOrderNumber IS NULL";
+
+                cmd.CommandText = sqlString;
+                cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
+
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.HasRows)
+                {
+                    bExist = true;
+                }
+                reader.Close();
+
+                if (bExist)
+                {
+                    sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
+                                CostcoOrderEmailPdf = @_costcoOrderEmailPdf
+                                WHERE WHERE CostcoItemName = @_costcoItemName 
+                                AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
+
+                    cmd.CommandText = sqlString;
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
+                    cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
+                    cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
+                    cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            cn.Close();
 
 
         }
 
         private void ProcessItemSoldEmail(string subject, string body)
         {
-            //
-
             string stItemNum = SubstringInBetween(subject, "(", ")", false, false);
 
             subject = subject.Replace("(" + stItemNum + ")", "");
@@ -303,13 +416,18 @@ namespace OutlookAddIn1
 
             driver.Dispose();
 
+            System.Threading.Thread.Sleep(3000);
+
             // Process files
-            string[] files = Directory.GetFiles(@"C:\temp\tempPDF");
+            string[] files = Directory.GetFiles(@"C:\temp\tempPDF\");
 
-            string sourceFile = files[0];
+            string sourceFileFullName = files[0];
 
+            string sourceFileName = sourceFileFullName.Replace(@"C:\temp\tempPDF\", "");
 
-            //C:\temp\tempPDF
+            string destinationFileName = dt.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".pdf";
+
+            File.Move(sourceFileFullName, @"C:\temp\eBaySoldEmails\" + destinationFileName);
 
             // db stuff
             SqlConnection cn = new SqlConnection(connectionString);
@@ -357,9 +475,9 @@ namespace OutlookAddIn1
             if (!bExist)
             {
                 sqlString = @"INSERT INTO eBay_SoldTransactions 
-                              (eBayItemNumber, eBaySoldDateTime, eBayItemName, eBayUrl, eBayPrice, eBayListingQuality, eBaySoldQuality, eBayRemainingQuality, 
+                              (eBayItemNumber, eBaySoldDateTime, eBayItemName, eBayUrl, eBayPrice, eBayListingQuality, eBaySoldQuality, eBayRemainingQuality, eBaySoldEmailPdf,
                                BuyerName, BuyerID, BuyerEmail, CostcoUrlNumber, CostcoUrl, CostcoPrice)
-                              VALUES (@_eBayItemNumber, @_eBaySoldDateTime, @_eBayItemName, @_eBayUrl, @_eBayPrice, @_eBayListingQuality, @_eBaySoldQuality, @_eBayRemainingQuality, 
+                              VALUES (@_eBayItemNumber, @_eBaySoldDateTime, @_eBayItemName, @_eBayUrl, @_eBayPrice, @_eBayListingQuality, @_eBaySoldQuality, @_eBayRemainingQuality, @_eBaySoldEmailPdf,
                                @_BuyerName, @_BuyerID, @_BuyerEmail, @_CostcoUrlNumber, @_CostcoUrl, @_CostcoPrice)";
 
                 cmd.CommandText = sqlString;
@@ -371,6 +489,7 @@ namespace OutlookAddIn1
                 cmd.Parameters.AddWithValue("@_eBayListingQuality", Convert.ToInt16(stQuantity));
                 cmd.Parameters.AddWithValue("@_eBaySoldQuality", Convert.ToInt16(stQuantitySold));
                 cmd.Parameters.AddWithValue("@_eBayRemainingQuality", Convert.ToInt16(stQuantityRemaining));
+                cmd.Parameters.AddWithValue("@_eBaySoldEmailPdf", destinationFileName);
                 cmd.Parameters.AddWithValue("@_BuyerName", stBuyerName);
                 cmd.Parameters.AddWithValue("@_BuyerID", stBuyerId);
                 cmd.Parameters.AddWithValue("@_BuyerEmail", stBuyerEmail);
@@ -472,7 +591,62 @@ namespace OutlookAddIn1
             stTotal = stTotal.Replace("USD", "");
             stTotal = stTotal.Trim();
 
+            // Generate PDF for email
+            File.WriteAllText(@"C:\temp\temp.html", body);
+
+            FirefoxProfile profile = new FirefoxProfile();
+            profile.SetPreference("print.always_print_silent", true);
+
+            IWebDriver driver = new FirefoxDriver(profile);
+
+            driver.Navigate().GoToUrl(@"file:///C:/temp/temp.html");
+
+            IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+
+            js.ExecuteScript("window.print();");
+
+            driver.Dispose();
+
+            System.Threading.Thread.Sleep(3000);
+
+            // Process files
+            string[] files = Directory.GetFiles(@"C:\temp\tempPDF\");
+
+            string sourceFileFullName = files[0];
+
+            string sourceFileName = sourceFileFullName.Replace(@"C:\temp\tempPDF\", "");
+
+            string destinationFileName = dtTime.ToString("yyyyMMddHHmmss") + "_" + stTransactionID + ".pdf";
+
+            File.Move(sourceFileFullName, @"C:\temp\PaypalPaidEmails\" + destinationFileName);
+
             // db stuff
+            SqlConnection cn = new SqlConnection(connectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = cn;
+            cn.Open();
+
+            string sqlString = @"UPDATE eBay_SoldTransactions SET PaypalTransactionID = @_paypalTransactionID, 
+                                PaypalPaidDateTime = @_paypalPaidDateTime, PaypalPaidEmailPdf = @_paypalPaidEmailPdf,
+                                BuyerAddress1 = @_buyerAddress1, 
+                                BuyerAddress2 = @_buyAddress2, BuyerState = @_buyerState, BuyerNote = @_buyerNote 
+                                WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
+
+            cmd.CommandText = sqlString;
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalPaidDateTime", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+
+
+
 
         }
 
