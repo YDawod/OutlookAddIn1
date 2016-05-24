@@ -72,7 +72,6 @@ namespace OutlookAddIn1
 
         void items_ItemAdd(object Item)
         {
-            string filter = "USED CARS";
             Outlook.MailItem mail = (Outlook.MailItem)Item;
             if (Item != null)
             {
@@ -80,71 +79,11 @@ namespace OutlookAddIn1
                 {
                     string subject = mail.Subject;
 
-                    string productName = subject.Substring(32, subject.Length - 32);
-
-                    string sqlString = "select top 1 * from Archieve where name = '" + productName + "' order by ImportedDT desc";
-
-                    string categoryID = "";
-
-                    SqlConnection cn = new SqlConnection(connectionString);
-                    SqlCommand cmd = new SqlCommand();
-                    cmd.Connection = cn;
-
-                    Product product = new Product();
-
-                    cn.Open();
-                    cmd.CommandText = sqlString;
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    if (reader.HasRows)
-                    {
-                        reader.Read();
-
-                        product.Name = Convert.ToString(reader["Name"]);
-                        product.UrlNumber = Convert.ToString(reader["UrlNumber"]);
-                        product.ItemNumber = Convert.ToString(reader["ItemNumber"]);
-                        product.Category = Convert.ToString(reader["Category"]);
-                        product.Price = Convert.ToDecimal(reader["Price"]);
-                        product.Shipping = Convert.ToDecimal(reader["Shipping"]);
-                        product.Discount = Convert.ToString(reader["Discount"]);
-                        product.Details = Convert.ToString(reader["Details"]);
-                        product.Specification = Convert.ToString(reader["Specification"]);
-                        product.ImageLink = Convert.ToString(reader["ImageLink"]);
-                        product.Url = Convert.ToString(reader["Url"]);
-                    }
-                    reader.Close();
-
                     string body = mail.HTMLBody;
 
-                    // ItemID
-                    int iItemId = body.IndexOf("Item Id:");
-                    int iStart = iItemId + 100;
-                    int iEnd = body.IndexOf("</td>", iStart);
-                    string id = body.Substring(iStart - 4, iEnd - iStart + 4);
+                    
 
-                    // ListPrice
-                    iItemId = body.IndexOf("Price:");
-                    iStart = iItemId + 95;
-                    iEnd = body.IndexOf("</td>", iStart);
-                    string price = body.Substring(iStart, iEnd - iStart);
-
-                    // EndTime
-                    iItemId = body.IndexOf("End time:");
-                    iStart = iItemId + 98;
-                    iEnd = body.IndexOf("</td>", iStart);
-                    string endTime = body.Substring(iStart - 1, iEnd - iStart + 1);
-
-                    //MessageBox.Show(id + "|" + price + "|" + endTime);
-
-                    sqlString = "INSERT INTO eBay_CurrentListings (Name, eBayItemNumber, eBayListingPrice, " +
-                                "eBayListingDT, CostcoUrlNumber, CostcoUrl, eBayDescription, ImageLink) " +
-                                "VALUES ('" + product.Name + "', '" + id + "', '" + price + "', '" + DateTime.Now.AddDays(10).ToString() + "', '" +
-                                product.UrlNumber + "', '" + product.Url + "', '" +
-                                product.Specification + "', '" + product.ImageLink + "')";
-
-                    cmd.CommandText = sqlString;
-                    cmd.ExecuteNonQuery();
-
-                    cn.Close();
+                    ProcessListingConfirmEmail(body, subject);
                 }
                 else if (mail.TaskSubject.IndexOf("Relist") == 0)
                 {
@@ -199,6 +138,103 @@ namespace OutlookAddIn1
                     ProcessCostcoOrderEmail(body);
                 }
             } 
+        }
+
+        private void ProcessListingConfirmEmail(string body, string subject)
+        {
+            body = body.Replace("\n", "");
+            body = body.Replace("\t", "");
+            body = body.Replace("\\", "");
+            body = body.Replace("\"", "'");
+
+            string productName = subject.Substring(32, subject.Length - 32);
+
+            string sqlString = "SELECT * FROM eBay_ToAdd WHERE name = '" + productName + "'";
+
+            SqlConnection cn = new SqlConnection(connectionString);
+            SqlCommand cmd = new SqlCommand();
+            cmd.Connection = cn;
+
+            Product product = new Product();
+
+            cn.Open();
+            cmd.CommandText = sqlString;
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                reader.Read();
+
+                product.Name = Convert.ToString(reader["Name"]);
+                product.UrlNumber = Convert.ToString(reader["UrlNumber"]);
+                product.ItemNumber = Convert.ToString(reader["ItemNumber"]);
+                product.Category = Convert.ToString(reader["Category"]);
+                product.Price = Convert.ToDecimal(reader["Price"]);
+                product.Shipping = Convert.ToDecimal(reader["Shipping"]);
+                product.Limit = Convert.ToString(reader["Limit"]);
+                product.Details = Convert.ToString(reader["Details"]);
+                product.Specification = Convert.ToString(reader["Specification"]);
+                product.ImageLink = Convert.ToString(reader["ImageLink"]);
+                product.NumberOfImage = Convert.ToInt16(reader["NumberOfImage"]);
+                product.Url = Convert.ToString(reader["Url"]);
+                product.eBayCategoryID = Convert.ToString(reader["eBayCategoryID"]);
+                product.eBayReferencePrice = Convert.ToDecimal(reader["eBayReferencePrice"]);
+                product.eBayListingPrice = Convert.ToDecimal(reader["eBayListingPrice"]);
+                product.DescriptionImageWidth = Convert.ToInt16(reader["DescriptionImageWidth"]);
+                product.DescriptionImageHeight = Convert.ToInt16(reader["DescriptionImageHeight"]);
+            }
+
+            reader.Close();
+
+            sqlString = @"DELETE FROM eBay_ToAdd WHERE name = '" + productName + "'";
+            cmd.CommandText = sqlString;
+            cmd.ExecuteNonQuery();
+
+            body = body.Replace("\r", "");
+            body = body.Replace("\t", "");
+            body = body.Replace("\n", "");
+
+            string stItemId = SubstringInBetween(body, "Item Id:</td>", "</td>", false, true);
+            stItemId = SubstringEndBack(stItemId, "</td>", ">", false, false);
+            stItemId = stItemId.Trim();
+
+            string stListingUrl = SubstringEndBack(body, "Item Id:</td>", "<a href='", true, false);
+            stListingUrl = SubstringInBetween(stListingUrl, "<a href='", "target", false, false);
+            stListingUrl = stListingUrl.Trim();
+
+            string stPrice = SubstringInBetween(body, "Price:</td>", "</td>", false, true);
+            stPrice = SubstringEndBack(stPrice, "</td>", "$", false, false);
+            stPrice = stPrice.Trim();
+
+            string stEndTime = SubstringInBetween(body, "End time:</td>", "</td>", false, false);
+            stEndTime = SubstringEndBack(stEndTime, "PDT", ">", false, true);
+            stEndTime = stEndTime.Trim();
+            string correctedTZ = stEndTime.Replace("PDT", "-0700");
+            DateTime dtEndTime = Convert.ToDateTime(correctedTZ);
+
+            sqlString = @"INSERT INTO eBay_CurrentListings
+                            (Name, eBayListingName, eBayCategoryID, eBayItemNumber, eBayListingPrice, eBayDescription, 
+                             eBayEndTime, eBayUrl, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink) 
+                          VALUES (@_name, @_eBayListingName, @_eBayCategoryID, @_eBayItemNumber, @_eBayListingPrice, @_eBayDescription,
+                                @_eBayEndTime, @_eBayUrl, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink)";
+
+            cmd.CommandText = sqlString;
+            cmd.Parameters.AddWithValue("@_name", product.Name);
+            cmd.Parameters.AddWithValue("@_eBayListingName", productName);
+            cmd.Parameters.AddWithValue("@_eBayCategoryID", product.eBayCategoryID);
+            cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemId);
+            cmd.Parameters.AddWithValue("@_eBayListingPrice", product.eBayListingPrice);
+            cmd.Parameters.AddWithValue("@_eBayDescription", product.Details);
+            cmd.Parameters.AddWithValue("@_eBayEndTime", dtEndTime);
+            cmd.Parameters.AddWithValue("@_eBayUrl", stListingUrl);
+            cmd.Parameters.AddWithValue("@_CostcoUrlNumber", product.UrlNumber);
+            cmd.Parameters.AddWithValue("@_CostcoItemNumber", product.ItemNumber);
+            cmd.Parameters.AddWithValue("@_CostcoUrl", product.Url);
+            cmd.Parameters.AddWithValue("@_CostcoPrice", product.Price);
+            cmd.Parameters.AddWithValue("@_ImageLink", product.ImageLink);
+
+            cmd.ExecuteNonQuery();
+
+            cn.Close();
         }
 
         private void ProcessCostcoOrderEmail(string body)
