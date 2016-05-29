@@ -81,8 +81,6 @@ namespace OutlookAddIn1
 
                     string body = mail.HTMLBody;
 
-                    
-
                     ProcessListingConfirmEmail(body, subject);
                 }
                 else if (mail.TaskSubject.IndexOf("Relist") == 0)
@@ -99,7 +97,11 @@ namespace OutlookAddIn1
 
                     cn.Open();
 
-                    string sqlString = "DELETE FROM eBay_CurrentListings WHERE Name = '" + productName + "'";
+                    string sqlString = "DELETE FROM eBay_CurrentListings WHERE eBayListingName = '" + productName + "'";
+                    cmd.CommandText = sqlString;
+                    cmd.ExecuteNonQuery();
+
+                    sqlString = "DELETE FROM eBay_ToRemove WHERE eBayListingName = '" + productName + "'";
                     cmd.CommandText = sqlString;
                     cmd.ExecuteNonQuery();
 
@@ -197,12 +199,13 @@ namespace OutlookAddIn1
             stItemId = SubstringEndBack(stItemId, "</td>", ">", false, false);
             stItemId = stItemId.Trim();
 
-            string stListingUrl = SubstringEndBack(body, "Item Id:</td>", "<a href='", true, false);
-            stListingUrl = SubstringInBetween(stListingUrl, "<a href='", "target", false, false);
-            stListingUrl = stListingUrl.Trim();
+            //string stListingUrl = SubstringEndBack(body, "Item Id:</td>", "<a href='", true, false);
+            //stListingUrl = SubstringInBetween(stListingUrl, "<a href='", "target", false, false);
+            //stListingUrl = stListingUrl.Trim();
 
             string stPrice = SubstringInBetween(body, "Price:</td>", "</td>", false, true);
             stPrice = SubstringEndBack(stPrice, "</td>", "$", false, false);
+            stPrice = stPrice.Replace("$", "");
             stPrice = stPrice.Trim();
 
             string stEndTime = SubstringInBetween(body, "End time:</td>", "</td>", false, false);
@@ -213,9 +216,9 @@ namespace OutlookAddIn1
 
             sqlString = @"INSERT INTO eBay_CurrentListings
                             (Name, eBayListingName, eBayCategoryID, eBayItemNumber, eBayListingPrice, eBayDescription, 
-                             eBayEndTime, eBayUrl, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink) 
+                             eBayEndTime, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink) 
                           VALUES (@_name, @_eBayListingName, @_eBayCategoryID, @_eBayItemNumber, @_eBayListingPrice, @_eBayDescription,
-                                @_eBayEndTime, @_eBayUrl, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink)";
+                                @_eBayEndTime, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink)";
 
             cmd.CommandText = sqlString;
             cmd.Parameters.AddWithValue("@_name", product.Name);
@@ -225,7 +228,7 @@ namespace OutlookAddIn1
             cmd.Parameters.AddWithValue("@_eBayListingPrice", product.eBayListingPrice);
             cmd.Parameters.AddWithValue("@_eBayDescription", product.Details);
             cmd.Parameters.AddWithValue("@_eBayEndTime", dtEndTime);
-            cmd.Parameters.AddWithValue("@_eBayUrl", stListingUrl);
+            //cmd.Parameters.AddWithValue("@_eBayUrl", stListingUrl);
             cmd.Parameters.AddWithValue("@_CostcoUrlNumber", product.UrlNumber);
             cmd.Parameters.AddWithValue("@_CostcoItemNumber", product.ItemNumber);
             cmd.Parameters.AddWithValue("@_CostcoUrl", product.Url);
