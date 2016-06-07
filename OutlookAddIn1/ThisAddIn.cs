@@ -101,7 +101,7 @@ namespace OutlookAddIn1
                     cmd.CommandText = sqlString;
                     cmd.ExecuteNonQuery();
 
-                    sqlString = "DELETE FROM eBay_ToRemove WHERE eBayListingName = '" + productName + "'";
+                    sqlString = "DELETE FROM eBay_ToRemove WHERE Name = '" + productName + "'";
                     cmd.CommandText = sqlString;
                     cmd.ExecuteNonQuery();
 
@@ -137,7 +137,7 @@ namespace OutlookAddIn1
 
                     body = @"<html><head></head><body>" + body + @"</body></html>";
 
-                    ProcessCostcoOrderEmail(body);
+                    //ProcessCostcoOrderEmail(body);
                 }
             } 
         }
