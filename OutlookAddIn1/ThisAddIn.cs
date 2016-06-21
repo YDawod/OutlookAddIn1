@@ -21,7 +21,6 @@ namespace OutlookAddIn1
 
         string connectionString = "Data Source=DESKTOP-ABEPKAT;Initial Catalog=Costco;Integrated Security=False;User ID=sa;Password=G4indigo;Connect Timeout=15;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
 
-
         private void ThisAddIn_Startup(object sender, System.EventArgs e)
         {
             outlookNameSpace = this.Application.GetNamespace("MAPI");
@@ -73,73 +72,85 @@ namespace OutlookAddIn1
         void items_ItemAdd(object Item)
         {
             Outlook.MailItem mail = (Outlook.MailItem)Item;
-            if (Item != null)
+
+            try
             {
-                if (mail.TaskSubject.IndexOf("Your eBay listing is confirmed") == 0)
+                if (Item != null)
                 {
-                    string subject = mail.Subject;
+                    if (mail.TaskSubject.IndexOf("Your eBay listing is confirmed") == 0)
+                    {
+                        string subject = mail.Subject;
 
-                    string body = mail.HTMLBody;
+                        string body = mail.HTMLBody;
 
-                    ProcessListingConfirmEmail(body, subject);
+                        ProcessListingConfirmEmail(body, subject);
+                    }
+                    else if (mail.TaskSubject.IndexOf("Relist") == 0)
+                    {
+                        string subject = mail.Subject;
+
+                        string productName = subject.Substring(7, subject.Length - 7);
+
+                        SqlConnection cn = new SqlConnection(connectionString);
+                        SqlCommand cmd = new SqlCommand();
+                        cmd.Connection = cn;
+
+                        Product product = new Product();
+
+                        cn.Open();
+
+                        string sqlString = "DELETE FROM eBay_CurrentListings WHERE eBayListingName = '" + productName + "'";
+                        cmd.CommandText = sqlString;
+                        cmd.ExecuteNonQuery();
+
+                        sqlString = "DELETE FROM eBay_ToRemove WHERE Name = '" + productName + "'";
+                        cmd.CommandText = sqlString;
+                        cmd.ExecuteNonQuery();
+
+                        cn.Close();
+                    }
+                    else if (mail.TaskSubject.Contains("Instant payment received"))
+                    {
+                        string body = mail.HTMLBody;
+                        body = body.Replace("\n", "");
+                        body = body.Replace("\t", "");
+                        body = body.Replace("\\", "");
+
+                        ProcessPaymentReceivedEmail(body);
+                    }
+                    else if (mail.TaskSubject.IndexOf("Your eBay item sold!") == 0)
+                    {
+                        string body = mail.HTMLBody;
+                        body = body.Replace("\n", "");
+                        body = body.Replace("\t", "");
+                        body = body.Replace("\\", "");
+                        body = body.Replace("\"", "'");
+
+                        ProcessItemSoldEmail(mail.TaskSubject, body);
+                    }
+
+                    else if (mail.TaskSubject.Contains("Your Costco.com Order Was Received"))
+                    {
+                        string body = mail.HTMLBody;
+                        body = body.Replace("\n", "");
+                        body = body.Replace("\t", "");
+                        body = body.Replace("\\", "");
+                        body = body.Replace("\"", "'");
+
+                        body = @"<html><head></head><body>" + body + @"</body></html>";
+
+                        //ProcessCostcoOrderEmail(body);
+                    }
                 }
-                else if (mail.TaskSubject.IndexOf("Relist") == 0)
-                {
-                    string subject = mail.Subject;
+            }
+            catch (Exception e)
+            {
 
-                    string productName = subject.Substring(7, subject.Length - 7);
+            }
+            finally
+            {
 
-                    SqlConnection cn = new SqlConnection(connectionString);
-                    SqlCommand cmd = new SqlCommand();
-                    cmd.Connection = cn;
-
-                    Product product = new Product();
-
-                    cn.Open();
-
-                    string sqlString = "DELETE FROM eBay_CurrentListings WHERE eBayListingName = '" + productName + "'";
-                    cmd.CommandText = sqlString;
-                    cmd.ExecuteNonQuery();
-
-                    sqlString = "DELETE FROM eBay_ToRemove WHERE Name = '" + productName + "'";
-                    cmd.CommandText = sqlString;
-                    cmd.ExecuteNonQuery();
-
-                    cn.Close();
-                }
-                else if (mail.TaskSubject.Contains("Instant payment received"))
-                {
-                    string body = mail.HTMLBody;
-                    body = body.Replace("\n", "");
-                    body = body.Replace("\t", "");
-                    body = body.Replace("\\", "");
-
-                    ProcessPaymentReceivedEmail(body);
-                }
-                else if (mail.TaskSubject.IndexOf("Your eBay item sold!") == 0)
-                {
-                    string body = mail.HTMLBody;
-                    body = body.Replace("\n", "");
-                    body = body.Replace("\t", "");
-                    body = body.Replace("\\", "");
-                    body = body.Replace("\"", "'");
-
-                    ProcessItemSoldEmail(mail.TaskSubject, body);
-                }
-
-                else if (mail.TaskSubject.Contains("Your Costco.com Order Was Received"))
-                {
-                    string body = mail.HTMLBody;
-                    body = body.Replace("\n", "");
-                    body = body.Replace("\t", "");
-                    body = body.Replace("\\", "");
-                    body = body.Replace("\"", "'");
-
-                    body = @"<html><head></head><body>" + body + @"</body></html>";
-
-                    //ProcessCostcoOrderEmail(body);
-                }
-            } 
+            }
         }
 
         private void ProcessListingConfirmEmail(string body, string subject)
@@ -537,6 +548,23 @@ namespace OutlookAddIn1
                 cmd.Parameters.AddWithValue("@_CostcoPrice", eBayProduct.CostcoPrice);
 
                 cmd.ExecuteNonQuery();
+
+                //eBaySoldProduct soldProduct = new eBaySoldProduct();
+                //soldProduct.eBayItemName = stItemNum;
+                //soldProduct.eBaySoldDateTime = dt;
+                //soldProduct.eBayItemName = stItemName;
+                //soldProduct.eBayUrl = stUrl;
+                //soldProduct.eBaySoldPrice = Convert.ToDecimal(stPrice);
+                //soldProduct.eBayListingQuality = Convert.ToInt16(stQuantity);
+                //soldProduct.eBaySoldQuality = Convert.ToInt16(stQuantitySold);
+                //soldProduct.eBayRemainingQuality = Convert.ToInt16(stQuantityRemaining);
+                //soldProduct.eBaySoldEmailPdf = destinationFileName;
+                //soldProduct.BuyerName = stBuyerName;
+                //soldProduct.BuyerID = stBuyerId;
+                //soldProduct.BuyerEmail = stBuyerEmail;
+                //soldProduct.CostcoUrlNumber = eBayProduct.CostcoUrlNumber;
+                //soldProduct.CostcoUrl = eBayProduct.CostcoUrl;
+                //soldProduct.CostcoPrice = eBayProduct.CostcoPrice;
             }
             else
             {
@@ -544,6 +572,91 @@ namespace OutlookAddIn1
             }
 
             cn.Close();
+        }
+
+        private void OrderCostcoProduct(eBaySoldProduct soldProduct)
+        {
+            IWebDriver driver = new FirefoxDriver();
+
+            driver.Navigate().GoToUrl("https://www.costco.com/LogonForm");
+            driver.FindElement(By.Id("logonId")).SendKeys("zjding@gmail.com");
+            driver.FindElement(By.Id("logonPassword")).SendKeys("721123");
+            driver.FindElements(By.ClassName("submit"))[2].Click();
+
+            driver.Navigate().GoToUrl("http://www.costco.com/");
+            driver.FindElement(By.Id("mini-shopping-cart")).Click();
+
+            while (driver.FindElements(By.LinkText("Remove from cart")).Count > 0)
+            {
+                driver.FindElements(By.LinkText("Remove from cart"))[0].Click();
+                System.Threading.Thread.Sleep(3000);
+            }
+
+            driver.Navigate().GoToUrl(soldProduct.CostcoUrl);
+            driver.FindElement(By.Id("minQtyText")).Clear();
+            driver.FindElement(By.Id("minQtyText")).SendKeys("1");
+            driver.FindElement(By.Id("addToCartBtn")).Click();
+
+            if (isAlertPresents(ref driver))
+                driver.SwitchTo().Alert().Accept();
+
+            driver.FindElement(By.Id("mini-shopping-cart")).Click();
+
+            if (isAlertPresents(ref driver))
+                driver.SwitchTo().Alert().Accept();
+
+            string buyerFirstName = soldProduct.BuyerName.Split(' ')[0];
+            string buyerLastName = soldProduct.BuyerName.Split(' ')[1];
+
+            driver.FindElement(By.Id("shopCartCheckoutSubmitButton")).Click();
+            driver.FindElement(By.Id("addressFormInlineFirstName")).SendKeys(buyerFirstName);
+            driver.FindElement(By.Id("addressFormInlineLastName")).SendKeys(buyerLastName);
+            driver.FindElement(By.Id("addressFormInlineAddressLine1")).SendKeys(soldProduct.BuyerAddress1);
+            driver.FindElement(By.Id("addressFormInlineCity")).SendKeys(soldProduct.BuyerCity);
+
+
+
+            driver.FindElement(By.XPath("//select[@id='" + "addressFormInlineState" + "']/option[contains(.,'" + "Alabama" + "')]")).Click();
+            driver.FindElement(By.Id("addressFormInlineZip")).SendKeys(soldProduct.BuyerZip);
+            driver.FindElement(By.Id("addressFormInlinePhoneNumber")).SendKeys("2056175063");
+            driver.FindElement(By.Id("addressFormInlineAddressNickName")).SendKeys(DateTime.Now.ToString());
+
+            if (driver.FindElement(By.Id("saveAddressCheckboxInline")).Selected)
+            {
+                driver.FindElement(By.Id("saveAddressCheckboxInline")).Click();
+            }
+
+            driver.FindElement(By.Id("addressFormInlineButton")).Click();
+
+            System.Threading.Thread.Sleep(3000);
+
+            if (driver.FindElements(By.XPath("//span[contains(text(), 'Continue')]")).Count > 0)
+            {
+                driver.FindElement(By.XPath("//span[contains(text(), 'Continue')]")).Click();
+            }
+
+            driver.FindElement(By.Id("deliverySubmitButton")).Click();
+
+            driver.FindElement(By.Id("cc_cvc")).SendKeys("0905");
+
+            driver.FindElement(By.Id("paymentSubButtonBot")).Click();
+            if (isAlertPresents(ref driver))
+                driver.SwitchTo().Alert().Accept();
+
+
+        }
+
+        public bool isAlertPresents(ref IWebDriver driver)
+        {
+            try
+            {
+                driver.SwitchTo().Alert();
+                return true;
+            }// try
+            catch (Exception e)
+            {
+                return false;
+            }// catch
         }
 
         private void ProcessPaymentReceivedEmail(string html)
@@ -668,24 +781,66 @@ namespace OutlookAddIn1
             string sqlString = @"UPDATE eBay_SoldTransactions SET PaypalTransactionID = @_paypalTransactionID, 
                                 PaypalPaidDateTime = @_paypalPaidDateTime, PaypalPaidEmailPdf = @_paypalPaidEmailPdf,
                                 BuyerAddress1 = @_buyerAddress1, 
-                                BuyerAddress2 = @_buyAddress2, BuyerState = @_buyerState, BuyerNote = @_buyerNote 
+                                BuyerAddress2 = @_buyAddress2, BuyerCity = @_buyerCity, 
+                                BuyerState = @_buyerState, BuyerZip = @_buyerZip, BuyerNote = @_buyerNote,
+                                eBaySoldQuality = @_eBaySoldQuality
                                 WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
 
             cmd.CommandText = sqlString;
             cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalPaidDateTime", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+            cmd.Parameters.AddWithValue("@_paypalPaidDateTime", dtTime);
+            cmd.Parameters.AddWithValue("@_paypalPaidEmailPdf", destinationFileName);
+            cmd.Parameters.AddWithValue("@_buyerAddress1", stShippingAddress1);
+            cmd.Parameters.AddWithValue("@_buyAddress2", stShippingAddress2);
+            cmd.Parameters.AddWithValue("@_buyerCity", stShippingCity);
+            cmd.Parameters.AddWithValue("@_buyerState", stShippingState);
+            cmd.Parameters.AddWithValue("@_buyerZip", stShippingZip);
+            cmd.Parameters.AddWithValue("@_buyerNote", stBuyerNote);
+            cmd.Parameters.AddWithValue("@_eBaySoldQuality", stAmount);
+            cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
+            cmd.Parameters.AddWithValue("@_buyerID", stUserID);
 
+            cmd.ExecuteNonQuery();
+            cn.Close();
 
+            sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
 
+            cmd.CommandText = sqlString;
+            cmd.Parameters.Clear();
+            cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
+            cmd.Parameters.AddWithValue("@_buyerID", stUserID);
+
+            eBaySoldProduct soldProduct = new eBaySoldProduct();
+
+            SqlDataReader reader = cmd.ExecuteReader();
+            if (reader.HasRows)
+            {
+                reader.Read();
+
+                soldProduct.PaypalTransactionID = Convert.ToString(reader["PaypalTransactionID"]);
+                soldProduct.PaypalPaidDateTime = Convert.ToDateTime(reader["PaypalPaidDateTime"]);
+                soldProduct.PaypalPaidEmailPdf = Convert.ToString(reader["PaypalPaidEmailPdf"]);
+                soldProduct.eBayItemNumber = Convert.ToString(reader["eBayItemNumber"]);
+                soldProduct.eBaySoldDateTime = Convert.ToDateTime(reader["eBaySoldDateTime"]);
+                soldProduct.eBayItemName = Convert.ToString(reader["eBayItemName"]);
+                soldProduct.eBayListingQuality = Convert.ToInt16(reader["eBayListingQuality"]);
+                soldProduct.eBaySoldQuality = Convert.ToInt16(reader["eBaySoldQuality"]);
+                soldProduct.eBaySoldEmailPdf = Convert.ToString(reader["eBaySoldEmailPdf"]);
+                soldProduct.BuyerName = Convert.ToString(reader["BuyerName"]);
+                soldProduct.BuyerID = Convert.ToString(reader["BuyerID"]);
+                soldProduct.BuyerAddress1 = Convert.ToString(reader["BuyerAddress1"]);
+                soldProduct.BuyerAddress2 = Convert.ToString(reader["BuyerAddress2"]);
+                soldProduct.BuyerCity = Convert.ToString(reader["BuyerCity"]);
+                soldProduct.BuyerState = Convert.ToString(reader["BuyerState"]);
+                soldProduct.BuyerZip = Convert.ToString(reader["BuyerZip"]);
+                soldProduct.BuyerEmail = Convert.ToString(reader["BuyerEmail"]);
+                soldProduct.BuyerNote = Convert.ToString(reader["BuyerNote"]);
+                soldProduct.CostcoUrlNumber = Convert.ToString(reader["CostcoUrlNumber"]);
+                soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
+                soldProduct.CostcoPrice = Convert.ToDecimal(reader["CostcoPrice"]);
+                soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
+            }
+            reader.Close();
 
         }
 
@@ -742,7 +897,253 @@ namespace OutlookAddIn1
             return input;
         }
 
-        void Inspectors_NewInspector(Microsoft.Office.Interop.Outlook.Inspector Inspector)
+        public string GetState(string state)
+        {
+            switch (state.ToUpper())
+            {
+                case "AL":
+                    return "Alabama";
+
+                case "AK":
+                    return "Alaska";
+
+                case "AS":
+                    return "American Samoa";
+
+                case "AZ":
+                    return "Arizona";
+
+                case "AR":
+                    return "Arkansas";
+
+                case "CA":
+                    return "California";
+
+                case "CO":
+                    return "Colorado";
+
+                case "CT":
+                    return "Connecticut";
+
+                case "DE":
+                    return "Delaware";
+
+                case "DC":
+                    return "District of Columbia";
+
+                case "FL":
+                    return "Florida";
+
+                case "GA":
+                    return "Georgia";
+
+                case "GU":
+                    return "Guam";
+
+                case "HI":
+                    return "Hawaii";
+
+                case "ID":
+                    return "Idaho";
+
+                case "IL":
+                    return "Illinois";
+
+                case "IN":
+                    return "Indiana";
+
+                case "IA":
+                    return "Iowa";
+
+                case "KS":
+                    return "Kansas";
+
+                case "KY":
+                    return "Kentucky";
+
+                case "LA":
+                    return "Louisiana";
+
+                case "ME":
+                    return "Maine";
+
+                case "MH":
+                    return "Narshall Islands";
+
+                case "MD":
+                    return "Maryland";
+
+                case "MA":
+                    return "Massachusetts";
+
+                case "MI":
+                    return "Michigan";
+
+                case "MN":
+                    return "Minnesota";
+
+                case "MS":
+                    return "Mississippi";
+
+                case "MO":
+                    return "Missouri";
+
+                case "MT":
+                    return "Montana";
+
+                case "NE":
+                    return "Nebraska";
+
+                case "NV":
+                    return "Nevada";
+
+                case "NH":
+                    return "New Hampshire";
+
+                case "NJ":
+                    return "New Jersey";
+
+                case "NM":
+                    return "New Mexico";
+
+                case "NY":
+                    return "New York";
+
+                case "NC":
+                    return "North Carolina";
+
+                case "ND":
+                    return "North Dakota";
+
+                case "OH":
+                    return "Ohio";
+
+                case "OK":
+                    return "Oklahoma";
+
+                case "OR":
+                    return "Oregon";
+
+                case "PW":
+                    return "Palau";
+
+                case "PA":
+                    return "Pennsylvania";
+
+                case "PR":
+                    return "Puerto Rico";
+
+                case "RI":
+                    return "Rhode Island";
+
+                case "SC":
+                    return "South Carolina";
+
+                case "SD":
+                    return "South Dakota";
+
+                case "TN":
+                    return "Tennessee";
+
+                case "TX":
+                    return "Texas";
+
+                case "UT":
+                    return "Utah";
+
+                case "VT":
+                    return "Vermont";
+
+                case "VI":
+                    return "Virgin Islands";
+
+                case "VA":
+                    return "Virginia";
+
+                case "WA":
+                    return "Washington";
+
+                case "WV":
+                    return "West Virginia";
+
+                case "WI":
+                    return "Wisconsin";
+
+                case "WY":
+                    return "Wyoming";
+            }
+
+            throw new Exception("Not Available");
+        }
+    }
+
+
+    
+
+    public enum State
+    {
+        AL,
+        AK,
+        AS,
+        AZ,
+        AR,
+        CA,
+        CO,
+        CT,
+        DE,
+        DC,
+        FM,
+        FL,
+        GA,
+        GU,
+        HI,
+        ID,
+        IL,
+        IN,
+        IA,
+        KS,
+        KY,
+        LA,
+        ME,
+        MH,
+        MD,
+        MA,
+        MI,
+        MN,
+        MS,
+        MO,
+        MT,
+        NE,
+        NV,
+        NH,
+        NJ,
+        NM,
+        NY,
+        NC,
+        ND,
+        MP,
+        OH,
+        OK,
+        OR,
+        PW,
+        PA,
+        PR,
+        RI,
+        SC,
+        SD,
+        TN,
+        TX,
+        UT,
+        VT,
+        VI,
+        VA,
+        WA,
+        WV,
+        WI,
+        WY
+    }
+
+    void Inspectors_NewInspector(Microsoft.Office.Interop.Outlook.Inspector Inspector)
         {
             Outlook.MailItem mailItem = Inspector.CurrentItem as Outlook.MailItem;
             if (mailItem != null)

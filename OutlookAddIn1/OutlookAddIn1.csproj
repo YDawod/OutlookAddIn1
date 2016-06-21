@@ -160,6 +160,7 @@
   -->
   <ItemGroup>
     <Compile Include="eBayListingProduct.cs" />
+    <Compile Include="eBaySoldProduct.cs" />
     <Compile Include="Product.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
