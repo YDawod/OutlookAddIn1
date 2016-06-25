@@ -103,7 +103,7 @@ namespace OutlookAddIn1
                         cmd.CommandText = sqlString;
                         cmd.ExecuteNonQuery();
 
-                        sqlString = "DELETE FROM eBay_ToRemove WHERE Name = '" + productName + "'";
+                        sqlString = "DELETE FROM eBay_ToRemove WHERE eBayListingName = '" + productName + "'";
                         cmd.CommandText = sqlString;
                         cmd.ExecuteNonQuery();
 
@@ -162,7 +162,7 @@ namespace OutlookAddIn1
 
             string productName = subject.Substring(32, subject.Length - 32);
 
-            string sqlString = "SELECT * FROM eBay_ToAdd WHERE name = '" + productName + "'";
+            string sqlString = "SELECT * FROM eBay_ToAdd WHERE Name = '" + productName + "'";
 
             SqlConnection cn = new SqlConnection(connectionString);
             SqlCommand cmd = new SqlCommand();
@@ -614,9 +614,9 @@ namespace OutlookAddIn1
             driver.FindElement(By.Id("addressFormInlineAddressLine1")).SendKeys(soldProduct.BuyerAddress1);
             driver.FindElement(By.Id("addressFormInlineCity")).SendKeys(soldProduct.BuyerCity);
 
+            string state = GetState(soldProduct.BuyerState);
 
-
-            driver.FindElement(By.XPath("//select[@id='" + "addressFormInlineState" + "']/option[contains(.,'" + "Alabama" + "')]")).Click();
+            driver.FindElement(By.XPath("//select[@id='" + "addressFormInlineState" + "']/option[contains(.,'" + state + "')]")).Click();
             driver.FindElement(By.Id("addressFormInlineZip")).SendKeys(soldProduct.BuyerZip);
             driver.FindElement(By.Id("addressFormInlinePhoneNumber")).SendKeys("2056175063");
             driver.FindElement(By.Id("addressFormInlineAddressNickName")).SendKeys(DateTime.Now.ToString());
@@ -639,9 +639,10 @@ namespace OutlookAddIn1
 
             driver.FindElement(By.Id("cc_cvc")).SendKeys("0905");
 
-            driver.FindElement(By.Id("paymentSubButtonBot")).Click();
-            if (isAlertPresents(ref driver))
-                driver.SwitchTo().Alert().Accept();
+            //driver.FindElement(By.Id("paymentSubButtonBot")).Click();
+
+            //if (isAlertPresents(ref driver))
+            //    driver.SwitchTo().Alert().Accept();
 
 
         }
@@ -838,10 +839,12 @@ namespace OutlookAddIn1
                 soldProduct.CostcoUrlNumber = Convert.ToString(reader["CostcoUrlNumber"]);
                 soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
                 soldProduct.CostcoPrice = Convert.ToDecimal(reader["CostcoPrice"]);
-                soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
+
+                soldProduct.CostcoUrl = "http://www.costco.com/Vasanti-Gel-Matte-Lipstick-with-Lipline-Extreme-Lipliner.product.100243171.html";
             }
             reader.Close();
 
+            OrderCostcoProduct(soldProduct);
         }
 
         private string SubstringInBetween(string input, string start, string end, bool bIncludeStart, bool bIncludeEnd)
@@ -1075,7 +1078,7 @@ namespace OutlookAddIn1
 
             throw new Exception("Not Available");
         }
-    }
+    
 
 
     
