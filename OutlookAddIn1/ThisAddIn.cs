@@ -118,6 +118,7 @@ namespace OutlookAddIn1
                         body = body.Replace("\n", "");
                         body = body.Replace("\t", "");
                         body = body.Replace("\\", "");
+                        body = body.Replace("\"", "'");
 
                         ProcessPaymentReceivedEmail(body);
                     }
@@ -462,10 +463,9 @@ namespace OutlookAddIn1
                 string stBuyerEmail = SubstringInBetween(body, "(<a href='mailto:", "'", false, false);
 
                 // Generate PDF for email
-                string destinationFileName = dt.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".html";
-                File.WriteAllText(@"C:\temp\eBaySoldEmails\" + destinationFileName, body);
+                //string destinationFileName = dt.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".html";
+                //File.WriteAllText(@"C:\temp\eBaySoldEmails\" + destinationFileName, body);
 
-                /*
                 FirefoxProfile profile = new FirefoxProfile();
                 profile.SetPreference("print.always_print_silent", true);
 
@@ -491,7 +491,7 @@ namespace OutlookAddIn1
                 string destinationFileName = dt.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".pdf";
 
                 File.Move(sourceFileFullName, @"C:\temp\eBaySoldEmails\" + destinationFileName);
-                */
+                
 
                 // db stuff
                 SqlConnection cn = new SqlConnection(connectionString);
@@ -687,7 +687,7 @@ namespace OutlookAddIn1
 
         private void ProcessPaymentReceivedEmail(string html)
         {
-            string body = SubstringInBetween(html, "<body", @"</body>", true, true);
+            string body = html;
 
             // TransactionID
             string stTime = SubstringEndBack(body, "PDT", ">", false, true);
@@ -705,12 +705,12 @@ namespace OutlookAddIn1
 
             stBuyer = stBuyer.Replace("<br>" + stFullName + "<br>", "");
 
-            string stUserID = SubstringInBetween(stBuyer, @"</b>", "<br>", false, false);
+            string stUserID = SubstringInBetween(stBuyer, @"</span>", "<br>", false, false);
 
             string stUserEmail = SubstringEndBack(stBuyer, @"</a>", ">", false, false);
 
             // Shipping Address
-            string stShippingAddress = SubstringInBetween(body, "Shipping address", "<o:p>", true, false);
+            string stShippingAddress = SubstringInBetween(body, "Shipping address", "</td>", true, false);
 
             string stShippingName = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
 
@@ -734,12 +734,12 @@ namespace OutlookAddIn1
             string stShippingZip = stShippingAddress2;
 
             // Buyer note
-            string stBuyerNote = SubstringInBetween(body, "Note to seller", "<o:p>", false, true);
-            stBuyerNote = SubstringInBetween(stBuyerNote, "<br>", "<o:p>", false, false);
+            string stBuyerNote = SubstringInBetween(body, "Note to seller", "</td>", false, true);
+            stBuyerNote = SubstringInBetween(stBuyerNote, "<br>", "</td>", false, false);
             stBuyerNote = stBuyerNote.Replace("The buyer hasn't sent a note.", "");
 
             // Item 
-            string stItemNum = SubstringInBetween(body, "Item#", "<o:p>", false, false);
+            string stItemNum = SubstringInBetween(body, "Item#", "</td>", false, false);
             stItemNum = stItemNum.Trim();
 
             string stItemName = SubstringInBetween(body, "<a href='http://cgi.ebay.com/ws/eBayISAPI.dll?ViewItem&amp;item=" + stItemNum + "' target='_blank'>", @"</a>", false, false);
