@@ -141,9 +141,9 @@ namespace OutlookAddIn1
                         body = body.Replace("\\", "");
                         body = body.Replace("\"", "'");
 
-                        body = @"<html><head></head><body>" + body + @"</body></html>";
+                        //body = @"<html><head></head><body>" + body + @"</body></html>";
 
-                        //ProcessCostcoOrderEmail(body);
+                        ProcessCostcoOrderEmail(body);
                     }
 
                     mail.UnRead = false;
@@ -259,143 +259,171 @@ namespace OutlookAddIn1
 
         private void ProcessCostcoOrderEmail(string body)
         {
-            body = body.Replace("\r", "");
-            body = body.Replace("\t", "");
-            body = body.Replace("\n", "");
-            string stOrderNumber = SubstringInBetween(body, "Order Number:</td>", "</td>", false, true);
-            stOrderNumber = SubstringEndBack(stOrderNumber, "</td>", ">", false, false);
-            stOrderNumber = stOrderNumber.Trim();
-
-            string stDatePlaced = SubstringInBetween(body, "Date Placed:</td>", "</td>", false, true);
-            stDatePlaced = SubstringEndBack(stDatePlaced, "</td>", ">", false, false);
-            stDatePlaced = stDatePlaced.Trim();
-
-            string stWorking = SubstringInBetween(body, "Item Total", "Shipping &amp; Terms", false, false);
-            stWorking = TrimTags(stWorking);
-
-            string stQuatity = stWorking.Substring(0, stWorking.IndexOf("<"));
-            stQuatity = stQuatity.Trim();
-
-            stWorking = stWorking.Substring(stQuatity.Length);
-            stWorking = TrimTags(stWorking);
-            string stProductName = stWorking.Substring(0, stWorking.IndexOf("<"));
-            stProductName = stProductName.Trim();
-
-            string stItemNum = stProductName.Substring(stProductName.IndexOf("Item#"));
-
-            stItemNum = stItemNum.Replace("Item#", "");
-            stItemNum = stItemNum.Trim();
-
-            string stShipping = SubstringInBetween(body, "Shipping Address", "Note:", false, false);
-
-            string stBuyerName = TrimTags(stShipping);
-
-            // Generate PDF for email
-            string destinationFileName = DateTime.Now.ToString("yyyyMMddHHmmss") + "_" + stOrderNumber;
-
-            File.WriteAllText(@"C:\temp\" + @"\" + destinationFileName + ".html", body);
-
-            FirefoxProfile profile = new FirefoxProfile();
-            profile.SetPreference("print.always_print_silent", true);
-
-            IWebDriver driver = new FirefoxDriver(profile);
-
-            driver.Navigate().GoToUrl(@"file:///" + @"C:\temp\" + @"\" + destinationFileName + ".html");
-
-            IJavaScriptExecutor js = driver as IJavaScriptExecutor;
-
-            js.ExecuteScript("window.print();");
-
-            driver.Dispose();
-
-            System.Threading.Thread.Sleep(10000);
-
-            // Process files
-            string sourceFileName = @"C:\temp\tempPDF\file__C__temp_" + destinationFileName + @"\" + "file_C_temp_" + destinationFileName + ".pdf";
-
-            File.Move(sourceFileName, @"C:\temp\CostcoOrderEmails\" + destinationFileName + ".pdf");
-
-            File.Delete(@"C:\temp\" + destinationFileName + ".html");
-            Directory.Delete(@"C:\temp\tempPDF\file__C__temp_" + destinationFileName);
-
-            // db stuff
-            string sqlString;
-            bool bExist = false;
-
-            SqlConnection cn = new SqlConnection(connectionString);
-            SqlCommand cmd = new SqlCommand();
-            cmd.Connection = cn;
-            cn.Open();
-
-            if (stItemNum != "")
+            try
             {
-                sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemNumber = @_costcoItemNumber 
+                body = body.Replace("\r", "");
+                body = body.Replace("\t", "");
+                body = body.Replace("\n", "");
+                string stOrderNumber = SubstringInBetween(body, "Order Number:</td>", "</td>", false, true);
+                stOrderNumber = SubstringEndBack(stOrderNumber, "</td>", ">", false, false);
+                stOrderNumber = stOrderNumber.Trim();
+
+                string stDatePlaced = SubstringInBetween(body, "Date Placed:</td>", "</td>", false, true);
+                stDatePlaced = SubstringEndBack(stDatePlaced, "</td>", ">", false, false);
+                stDatePlaced = stDatePlaced.Trim();
+
+                string stWorking = SubstringInBetween(body, "Item Total", "Shipping &amp; Terms", false, false);
+                stWorking = TrimTags(stWorking);
+
+                string stQuatity = stWorking.Substring(0, stWorking.IndexOf("<"));
+                stQuatity = stQuatity.Trim();
+
+                stWorking = stWorking.Substring(stQuatity.Length);
+                stWorking = TrimTags(stWorking);
+                string stProductName = stWorking.Substring(0, stWorking.IndexOf("<"));
+                stProductName = stProductName.Trim();
+
+                string stItemNum = stProductName.Substring(stProductName.IndexOf("Item#"));
+
+                stItemNum = stItemNum.Replace("Item#", "");
+                stItemNum = stItemNum.Trim();
+
+                string stShipping = SubstringInBetween(body, "Shipping Address", "Note:", false, false);
+
+
+                stWorking = TrimTags(stShipping);
+
+                string stBuyerName = stWorking.Substring(0, stWorking.IndexOf("<"));
+
+                stWorking = stWorking.Replace(stBuyerName, "");
+
+                stWorking = TrimTags(stWorking);
+
+                string stAddress1 = stWorking.Substring(0, stWorking.IndexOf("<"));
+
+                stWorking = stWorking.Replace(stAddress1, "");
+
+                stWorking = TrimTags(stWorking);
+
+                string stAddress2 = stWorking.Substring(0, stWorking.IndexOf("<"));
+
+                // Generate PDF for email
+                File.WriteAllText(@"C:\temp\temp.html", body);
+
+                FirefoxProfile profile = new FirefoxProfile();
+                profile.SetPreference("print.always_print_silent", true);
+
+                IWebDriver driver = new FirefoxDriver(profile);
+
+                driver.Navigate().GoToUrl(@"file:///C:/temp/temp.html");
+
+                IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+
+                js.ExecuteScript("window.print();");
+
+                driver.Dispose();
+
+                System.Threading.Thread.Sleep(3000);
+
+                // Process files
+                string[] files = Directory.GetFiles(@"C:\temp\tempPDF\");
+
+                string sourceFileFullName = files[0];
+
+                string sourceFileName = sourceFileFullName.Replace(@"C:\temp\tempPDF\", "");
+
+                string destinationFileName = Convert.ToDateTime(stDatePlaced).ToString("yyyyMMddHHmmss") + "_" + stOrderNumber + ".pdf";
+
+                File.Delete(@"C:\temp\CostcoOrderEmails\" + destinationFileName);
+
+                File.Move(sourceFileFullName, @"C:\temp\CostcoOrderEmails\" + destinationFileName);
+
+                // db stuff
+                string sqlString;
+                bool bExist = false;
+
+                SqlConnection cn = new SqlConnection(connectionString);
+                SqlCommand cmd = new SqlCommand();
+                cmd.Connection = cn;
+                cn.Open();
+
+                if (stItemNum != "")
+                {
+                    sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemNumber = @_costcoItemNumber 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
 
-                cmd.CommandText = sqlString;
-                cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
-                cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
+                    cmd.CommandText = sqlString;
+                    cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
+                    cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
 
-                SqlDataReader reader = cmd.ExecuteReader();
-                if (reader.HasRows)
-                {
-                    bExist = true;
-                }
-                reader.Close();
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (reader.HasRows)
+                    {
+                        bExist = true;
+                    }
+                    reader.Close();
 
-                if (bExist)
-                {
-                    sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
+                    if (bExist)
+                    {
+                        sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
                                 CostcoOrderEmailPdf = @_costcoOrderEmailPdf
                                 WHERE WHERE CostcoItemNumber = @_costcoItemNumber 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
 
+                        cmd.CommandText = sqlString;
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
+                        cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
+                        cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
+                        cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
+
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                else
+                {
+                    sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemName = @_costcoItemName
+                                AND BuyerName = @_buyerName AND CostcoOrderNumber IS NULL";
+
                     cmd.CommandText = sqlString;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
-                    cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
-                    cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
+                    cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
                     cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
 
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            else
-            {
-                sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemName = @_costcoItemName
-                                AND CostcoOrderNumber IS NULL";
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (reader.HasRows)
+                    {
+                        bExist = true;
+                    }
+                    reader.Close();
 
-                cmd.CommandText = sqlString;
-                cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
-
-                SqlDataReader reader = cmd.ExecuteReader();
-                if (reader.HasRows)
-                {
-                    bExist = true;
-                }
-                reader.Close();
-
-                if (bExist)
-                {
-                    sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
+                    if (bExist)
+                    {
+                        sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
                                 CostcoOrderEmailPdf = @_costcoOrderEmailPdf
                                 WHERE WHERE CostcoItemName = @_costcoItemName 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
 
-                    cmd.CommandText = sqlString;
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
-                    cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
-                    cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
-                    cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
+                        cmd.CommandText = sqlString;
+                        cmd.Parameters.Clear();
+                        cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
+                        cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
+                        cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
+                        cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
 
-                    cmd.ExecuteNonQuery();
+                        cmd.ExecuteNonQuery();
+                    }
                 }
+
+                cn.Close();
             }
+            catch (Exception e)
+            {
 
-            cn.Close();
+            }
+            finally
+            {
 
-
+            }
         }
 
         private void ProcessItemSoldEmail(string subject, string body)
@@ -601,75 +629,90 @@ namespace OutlookAddIn1
 
         private void OrderCostcoProduct(eBaySoldProduct soldProduct)
         {
-            IWebDriver driver = new FirefoxDriver();
-
-            driver.Navigate().GoToUrl("https://www.costco.com/LogonForm");
-            driver.FindElement(By.Id("logonId")).SendKeys("zjding@gmail.com");
-            driver.FindElement(By.Id("logonPassword")).SendKeys("721123");
-            driver.FindElements(By.ClassName("submit"))[2].Click();
-
-            driver.Navigate().GoToUrl("http://www.costco.com/");
-            driver.FindElement(By.Id("cart-d")).Click();
-
-            while (driver.FindElements(By.LinkText("Remove from cart")).Count > 0)
+            try
             {
-                driver.FindElements(By.LinkText("Remove from cart"))[0].Click();
+                IWebDriver driver = new FirefoxDriver();
+
+                driver.Navigate().GoToUrl("https://www.costco.com/LogonForm");
+                driver.FindElement(By.Id("logonId")).SendKeys("zjding@gmail.com");
+                driver.FindElement(By.Id("logonPassword")).SendKeys("721123");
+                driver.FindElements(By.ClassName("submit"))[0].Click();
+
+                driver.Navigate().GoToUrl("http://www.costco.com/");
+                driver.FindElement(By.Id("cart-d")).Click();
+
+                while (driver.FindElements(By.LinkText("Remove from cart")).Count > 0)
+                {
+                    driver.FindElements(By.LinkText("Remove from cart"))[0].Click();
+                    System.Threading.Thread.Sleep(3000);
+                }
+
+                driver.Navigate().GoToUrl(soldProduct.CostcoUrl);
+                driver.FindElement(By.Id("minQtyText")).Clear();
+                driver.FindElement(By.Id("minQtyText")).SendKeys("1");
+                driver.FindElement(By.Id("addToCartBtn")).Click();
+
+                if (isAlertPresents(ref driver))
+                    driver.SwitchTo().Alert().Accept();
+
+                driver.FindElement(By.Id("cart-d")).Click();
+
+                if (isAlertPresents(ref driver))
+                    driver.SwitchTo().Alert().Accept();
+
+                string buyerFirstName = soldProduct.BuyerName.Split(' ')[0];
+                string buyerLastName = soldProduct.BuyerName.Split(' ')[soldProduct.BuyerName.Split(' ').Count() - 1];
+
+
+                driver.FindElement(By.Id("shopCartCheckoutSubmitButton")).Click();
+
+                driver.FindElement(By.Id("addressFormInlineFirstName")).SendKeys(buyerFirstName);
+                driver.FindElement(By.Id("addressFormInlineLastName")).SendKeys(buyerLastName);
+                driver.FindElement(By.Id("addressFormInlineAddressLine1")).SendKeys(soldProduct.BuyerAddress1);
+                driver.FindElement(By.Id("addressFormInlineCity")).SendKeys(soldProduct.BuyerCity);
+
+                string state = GetState(soldProduct.BuyerState);
+
+                driver.FindElement(By.XPath("//select[@id='" + "addressFormInlineState" + "']/option[contains(.,'" + state + "')]")).Click();
+                driver.FindElement(By.Id("addressFormInlineZip")).SendKeys(soldProduct.BuyerZip);
+                driver.FindElement(By.Id("addressFormInlinePhoneNumber")).SendKeys("2056175063");
+                driver.FindElement(By.Id("addressFormInlineAddressNickName")).SendKeys(DateTime.Now.ToString());
+
+                if (driver.FindElement(By.Id("saveAddressCheckboxInline")).Selected)
+                {
+                    driver.FindElement(By.Id("saveAddressCheckboxInline")).Click();
+                }
+
+                driver.FindElement(By.Id("addressFormInlineButton")).Click();
+
                 System.Threading.Thread.Sleep(3000);
+
+                if (driver.FindElements(By.XPath("//span[contains(text(), 'Continue')]")).Count > 0)
+                {
+                    driver.FindElement(By.XPath("//span[contains(text(), 'Continue')]")).Click();
+                }
+
+                System.Threading.Thread.Sleep(3000);
+
+                driver.FindElement(By.Id("deliverySubmitButton")).Click();
+
+                driver.FindElement(By.Id("cc_cvc")).SendKeys("819");
+
+                driver.FindElement(By.Id("paymentSubButtonBot")).Click();
+
+                //if (isAlertPresents(ref driver))
+                //    driver.SwitchTo().Alert().Accept();
+
+                //driver.FindElement(By.Id("orderButton")).Click();
             }
-
-            driver.Navigate().GoToUrl(soldProduct.CostcoUrl);
-            driver.FindElement(By.Id("minQtyText")).Clear();
-            driver.FindElement(By.Id("minQtyText")).SendKeys("1");
-            driver.FindElement(By.Id("addToCartBtn")).Click();
-
-            if (isAlertPresents(ref driver))
-                driver.SwitchTo().Alert().Accept();
-
-            driver.FindElement(By.Id("cart-d")).Click();
-
-            if (isAlertPresents(ref driver))
-                driver.SwitchTo().Alert().Accept();
-
-            string buyerFirstName = soldProduct.BuyerName.Split(' ')[0];
-            string buyerLastName = soldProduct.BuyerName.Split(' ')[1];
-
-            driver.FindElement(By.Id("shopCartCheckoutSubmitButton")).Click();
-            driver.FindElement(By.Id("addressFormInlineFirstName")).SendKeys(buyerFirstName);
-            driver.FindElement(By.Id("addressFormInlineLastName")).SendKeys(buyerLastName);
-            driver.FindElement(By.Id("addressFormInlineAddressLine1")).SendKeys(soldProduct.BuyerAddress1);
-            driver.FindElement(By.Id("addressFormInlineCity")).SendKeys(soldProduct.BuyerCity);
-
-            string state = GetState(soldProduct.BuyerState);
-
-            driver.FindElement(By.XPath("//select[@id='" + "addressFormInlineState" + "']/option[contains(.,'" + state + "')]")).Click();
-            driver.FindElement(By.Id("addressFormInlineZip")).SendKeys(soldProduct.BuyerZip);
-            driver.FindElement(By.Id("addressFormInlinePhoneNumber")).SendKeys("2056175063");
-            driver.FindElement(By.Id("addressFormInlineAddressNickName")).SendKeys(DateTime.Now.ToString());
-
-            if (driver.FindElement(By.Id("saveAddressCheckboxInline")).Selected)
+            catch (Exception e)
             {
-                driver.FindElement(By.Id("saveAddressCheckboxInline")).Click();
+
             }
-
-            driver.FindElement(By.Id("addressFormInlineButton")).Click();
-
-            System.Threading.Thread.Sleep(3000);
-
-            if (driver.FindElements(By.XPath("//span[contains(text(), 'Continue')]")).Count > 0)
+            finally
             {
-                driver.FindElement(By.XPath("//span[contains(text(), 'Continue')]")).Click();
+
             }
-
-            driver.FindElement(By.Id("deliverySubmitButton")).Click();
-
-            driver.FindElement(By.Id("cc_cvc")).SendKeys("0905");
-
-            //driver.FindElement(By.Id("paymentSubButtonBot")).Click();
-
-            //if (isAlertPresents(ref driver))
-            //    driver.SwitchTo().Alert().Accept();
-
-
         }
 
         public bool isAlertPresents(ref IWebDriver driver)
