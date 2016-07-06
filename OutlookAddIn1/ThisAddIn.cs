@@ -609,7 +609,7 @@ namespace OutlookAddIn1
             driver.FindElements(By.ClassName("submit"))[2].Click();
 
             driver.Navigate().GoToUrl("http://www.costco.com/");
-            driver.FindElement(By.Id("mini-shopping-cart")).Click();
+            driver.FindElement(By.Id("cart-d")).Click();
 
             while (driver.FindElements(By.LinkText("Remove from cart")).Count > 0)
             {
@@ -625,7 +625,7 @@ namespace OutlookAddIn1
             if (isAlertPresents(ref driver))
                 driver.SwitchTo().Alert().Accept();
 
-            driver.FindElement(By.Id("mini-shopping-cart")).Click();
+            driver.FindElement(By.Id("cart-d")).Click();
 
             if (isAlertPresents(ref driver))
                 driver.SwitchTo().Alert().Accept();
@@ -754,7 +754,7 @@ namespace OutlookAddIn1
             stUnitePrice = stUnitePrice.Replace("USD", "");
             stUnitePrice = stUnitePrice.Trim();
 
-            stAmount = stAmount.Substring(stUnitePrice.Length);
+            stAmount = stAmount.Substring(stUnitePrice.Length+5);
 
             stAmount = TrimTags(stAmount);
 
@@ -796,6 +796,8 @@ namespace OutlookAddIn1
 
             string destinationFileName = dtTime.ToString("yyyyMMddHHmmss") + "_" + stTransactionID + ".pdf";
 
+            File.Delete(@"C:\temp\PaypalPaidEmails\" + destinationFileName);
+
             File.Move(sourceFileFullName, @"C:\temp\PaypalPaidEmails\" + destinationFileName);
 
             // db stuff
@@ -822,12 +824,11 @@ namespace OutlookAddIn1
             cmd.Parameters.AddWithValue("@_buyerState", stShippingState);
             cmd.Parameters.AddWithValue("@_buyerZip", stShippingZip);
             cmd.Parameters.AddWithValue("@_buyerNote", stBuyerNote);
-            cmd.Parameters.AddWithValue("@_eBaySoldQuality", stAmount);
+            cmd.Parameters.AddWithValue("@_eBaySoldQuality", stQuatity);
             cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
             cmd.Parameters.AddWithValue("@_buyerID", stUserID);
 
             cmd.ExecuteNonQuery();
-            cn.Close();
 
             sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
 
@@ -865,9 +866,11 @@ namespace OutlookAddIn1
                 soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
                 soldProduct.CostcoPrice = Convert.ToDecimal(reader["CostcoPrice"]);
 
-                soldProduct.CostcoUrl = "http://www.costco.com/Vasanti-Gel-Matte-Lipstick-with-Lipline-Extreme-Lipliner.product.100243171.html";
+                //soldProduct.CostcoUrl = "http://www.costco.com/Vasanti-Gel-Matte-Lipstick-with-Lipline-Extreme-Lipliner.product.100243171.html";
             }
             reader.Close();
+
+            cn.Close();
 
             OrderCostcoProduct(soldProduct);
         }
