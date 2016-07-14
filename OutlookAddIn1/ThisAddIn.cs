@@ -11,6 +11,8 @@ using System.IO;
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium;
 using System.Net;
+using iTextSharp.text.pdf;
+using iTextSharp.text;
 
 namespace OutlookAddIn1
 {
@@ -168,6 +170,77 @@ namespace OutlookAddIn1
             }
         }
 
+        private void FillUpTaxPDF(eBaySoldProduct product)
+        {
+            string pdfTemplateFileName = @"c:\ebay\documents\" + "TaxExemption_Form.pdf";
+            string newFileName = @"c:\temp\TaxExemption\" + DateTime.Now.ToString("yyyyMMddHHmmss") + "-" + product.CostcoOrderNumber + ".pdf";
+            PdfReader pdfReader = new PdfReader(pdfTemplateFileName);
+            PdfStamper pdfStamper = new PdfStamper(pdfReader, new FileStream(newFileName, FileMode.Create));
+            AcroFields pdfFormFields = pdfStamper.AcroFields;
+
+            pdfFormFields.SetField("txtLegalBusinessName", "eBay Business");
+            pdfFormFields.SetField("txtDoingBusinessAs", "eBay Business");
+            pdfFormFields.SetField("txtBusinessAddress", "1642 Crossgate Dr., Vestavia");
+            pdfFormFields.SetField("txtCostcoMembership", "111775568587");
+            pdfFormFields.SetField("txtBusinessPhone", "205-588-6960");
+            pdfFormFields.SetField("txtSaleTaxRegistration", "11111111");
+            pdfFormFields.SetField("txtStateRegistered", "AL");
+            pdfFormFields.SetField("txtTotalRefundRequested", Convert.ToString(product.CostcoTax));
+            pdfFormFields.SetField("txtPreciseNatureOfBusiness", "eCommerse");
+            pdfFormFields.SetField("txtCategoriesOfItems", "Health and Beauty");
+            pdfFormFields.SetField("txtDate", product.eBaySoldDateTime.ToShortDateString());
+
+            pdfStamper.FormFlattening = true;
+            pdfStamper.Close();
+            pdfReader.Close();
+
+
+            //List<string> fileNames = new List<string>();
+            //fileNames.Add(@"c:\ebay\TaxExemption\TaxExemptionTotal.pdf");
+            //fileNames.Add(newFileName);
+
+            //string tempFileName = @"c:\ebay\TaxExemption\TaxExemptionTemp.pdf";
+
+            //MergePDFs(fileNames, tempFileName);
+        }
+
+        public bool MergePDFs(IEnumerable<string> fileNames, string targetPdf)
+        {
+            bool merged = true;
+            using (FileStream stream = new FileStream(targetPdf, FileMode.Create))
+            {
+                Document document = new Document();
+                PdfCopy pdf = new PdfCopy(document, stream);
+                PdfReader reader = null;
+                try
+                {
+                    document.Open();
+                    foreach (string file in fileNames)
+                    {
+                        reader = new PdfReader(file);
+                        pdf.AddDocument(reader);
+                        reader.Close();
+                    }
+                }
+                catch (Exception)
+                {
+                    merged = false;
+                    if (reader != null)
+                    {
+                        reader.Close();
+                    }
+                }
+                finally
+                {
+                    if (document != null)
+                    {
+                        document.Close();
+                    }
+                }
+            }
+            return merged;
+        }
+
         private void ProcessListingConfirmEmail(string body, string subject)
         {
             body = body.Replace("\n", "");
@@ -316,6 +389,14 @@ namespace OutlookAddIn1
 
                 string stAddress2 = stWorking.Substring(0, stWorking.IndexOf("<"));
 
+                string stTax = SubstringInBetween(body, "Tax:", "</tr>", false, false);
+
+                stTax = TrimTags(stTax);
+
+                stTax = stTax.Substring(0, stTax.IndexOf("<"));
+
+                stTax = stTax.Replace("$", "");
+
                 // Generate PDF for email
                 File.WriteAllText(@"C:\temp\temp.html", body);
 
@@ -375,7 +456,7 @@ namespace OutlookAddIn1
                     if (bExist)
                     {
                         sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
-                                CostcoOrderEmailPdf = @_costcoOrderEmailPdf
+                                CostcoOrderEmailPdf = @_costcoOrderEmailPdf, CostcoTax = @_costcoTax 
                                 WHERE CostcoItemNumber = @_costcoItemNumber 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
 
@@ -383,6 +464,7 @@ namespace OutlookAddIn1
                         cmd.Parameters.Clear();
                         cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
                         cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
+                        cmd.Parameters.AddWithValue("@_costcoTax", stTax);
                         cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
                         cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
 
@@ -408,7 +490,7 @@ namespace OutlookAddIn1
                     if (bExist)
                     {
                         sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
-                                CostcoOrderEmailPdf = @_costcoOrderEmailPdf
+                                CostcoOrderEmailPdf = @_costcoOrderEmailPdf, CostcoTax = @_costcoTax 
                                 WHERE CostcoItemName = @_costcoItemName 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
 
@@ -416,6 +498,7 @@ namespace OutlookAddIn1
                         cmd.Parameters.Clear();
                         cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
                         cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
+                        cmd.Parameters.AddWithValue("@_costcoTax", stTax);
                         cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
                         cmd.Parameters.AddWithValue("@_buyerName", stBuyerName);
 
@@ -424,6 +507,13 @@ namespace OutlookAddIn1
                 }
 
                 cn.Close();
+
+                eBaySoldProduct product = new eBaySoldProduct();
+                product.eBaySoldDateTime = Convert.ToDateTime(stDatePlaced);
+                product.CostcoTax = Convert.ToDecimal(stTax);
+                product.CostcoOrderNumber = stOrderNumber;
+
+                FillUpTaxPDF(product);
             }
             catch (Exception e)
             {

@@ -22,3 +22,5 @@ c:\users\jason ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookA
 C:\Users\Jason Ding\documents\visual studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\obj\Debug\OutlookAddIn1.csprojResolveAssemblyReference.cache
 C:\Users\Jason Ding\Documents\Visual Studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\bin\Debug\WebDriver.dll
 C:\Users\Jason Ding\Documents\Visual Studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\bin\Debug\WebDriver.xml
+C:\Users\Jason Ding\Documents\Visual Studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\bin\Debug\itextsharp.dll
+C:\Users\Jason Ding\Documents\Visual Studio 2015\Projects\OutlookAddIn1\OutlookAddIn1\bin\Debug\itextsharp.xml

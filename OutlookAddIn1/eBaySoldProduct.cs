@@ -32,6 +32,7 @@ namespace OutlookAddIn1
         public string CostcoUrlNumber { get; set; }
         public string CostcoUrl { get; set; }
         public decimal CostcoPrice { get; set; }
+        public decimal CostcoTax { get; set; }
         public string CostcoOrderNumber { get; set; }
         public string CostcoItemName { get; set; }
         public string CostcoItemNumber { get; set; }
@@ -39,6 +40,7 @@ namespace OutlookAddIn1
         public string CostcoShipDate { get; set; }
         public string CostcoTaxExemptPdf { get; set; }
         public string CostcoOrderEmailPdf { get; set; }
+        public string CostcoShipEmailPdf { get; set; }
 
     }
 }
