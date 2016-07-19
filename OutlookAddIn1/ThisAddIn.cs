@@ -397,6 +397,11 @@ namespace OutlookAddIn1
 
                 stTax = stTax.Replace("$", "");
 
+                string stTotal = SubstringInBetween(body, "Order Total:", "</tr>", false, false);
+                stTotal = TrimTags(stTotal);
+                stTotal = stTotal.Substring(0, stTotal.IndexOf("<"));
+                stTotal = stTotal.Replace("$", "");
+               
                 // Generate PDF for email
                 File.WriteAllText(@"C:\temp\temp.html", body);
 
@@ -428,6 +433,11 @@ namespace OutlookAddIn1
 
                 File.Move(sourceFileFullName, @"C:\temp\CostcoOrderEmails\" + destinationFileName);
 
+                sourceFileFullName = destinationFileName;
+                destinationFileName = Convert.ToDateTime(stDatePlaced).ToString("yyyyMMdd") + "-" + stTotal + "-" + "Costco" + stOrderNumber + ".pdf";
+                File.Delete(@"C:\Users\Jason Ding\Dropbox\Bookkeeping\Cost\" + destinationFileName);
+                File.Copy(@"C:\temp\CostcoOrderEmails\" + sourceFileFullName, @"C:\Users\Jason Ding\Dropbox\Bookkeeping\Cost\" + destinationFileName);
+
                 // db stuff
                 string sqlString;
                 bool bExist = false;
@@ -440,7 +450,7 @@ namespace OutlookAddIn1
                 if (stItemNum != "")
                 {
                     sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE CostcoItemNumber = @_costcoItemNumber 
-                                AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
+                                AND BuyerName = @_buyerName AND CostcoOrderNumber IS NULL";
 
                     cmd.CommandText = sqlString;
                     cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
@@ -1052,6 +1062,11 @@ namespace OutlookAddIn1
             File.Delete(@"C:\temp\PaypalPaidEmails\" + destinationFileName);
 
             File.Move(sourceFileFullName, @"C:\temp\PaypalPaidEmails\" + destinationFileName);
+
+            sourceFileFullName = destinationFileName;
+            destinationFileName = dtTime.ToString("yyyyMMdd") + "-" + stTotal + "-" + "Paypal" + stTransactionID + ".pdf";
+            File.Delete(@"C:\Users\Jason Ding\Dropbox\Bookkeeping\Income\" + destinationFileName);
+            File.Copy(@"C:\temp\PaypalPaidEmails\" + sourceFileFullName, @"C:\Users\Jason Ding\Dropbox\Bookkeeping\Income\" + destinationFileName);
 
             // db stuff
             SqlConnection cn = new SqlConnection(connectionString);
