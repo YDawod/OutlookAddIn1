@@ -465,7 +465,8 @@ namespace OutlookAddIn1
 
                     if (bExist)
                     {
-                        sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
+                        sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber, 
+                                CostcoOrderDate = @_costcoOrderDate, 
                                 CostcoOrderEmailPdf = @_costcoOrderEmailPdf, CostcoTax = @_costcoTax 
                                 WHERE CostcoItemNumber = @_costcoItemNumber 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
@@ -473,6 +474,7 @@ namespace OutlookAddIn1
                         cmd.CommandText = sqlString;
                         cmd.Parameters.Clear();
                         cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
+                        cmd.Parameters.AddWithValue("@_costcoOrderDate", stDatePlaced);
                         cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
                         cmd.Parameters.AddWithValue("@_costcoTax", stTax);
                         cmd.Parameters.AddWithValue("@_costcoItemNumber", stItemNum);
@@ -500,6 +502,7 @@ namespace OutlookAddIn1
                     if (bExist)
                     {
                         sqlString = @"UPDATE eBay_SoldTransactions SET CostcoOrderNumber = @_costcoOrderNumber,
+                                CostcoOrderDate = @_costcoOrderDate, 
                                 CostcoOrderEmailPdf = @_costcoOrderEmailPdf, CostcoTax = @_costcoTax 
                                 WHERE CostcoItemName = @_costcoItemName 
                                 AND BuyerName = @_buyerName AND  CostcoOrderNumber IS NULL";
@@ -507,6 +510,7 @@ namespace OutlookAddIn1
                         cmd.CommandText = sqlString;
                         cmd.Parameters.Clear();
                         cmd.Parameters.AddWithValue("@_costcoOrderNumber", stOrderNumber);
+                        cmd.Parameters.AddWithValue("@_costcoOrderDate", stDatePlaced);
                         cmd.Parameters.AddWithValue("@_costcoOrderEmailPdf", destinationFileName);
                         cmd.Parameters.AddWithValue("@_costcoTax", stTax);
                         cmd.Parameters.AddWithValue("@_costcoItemName", stProductName);
