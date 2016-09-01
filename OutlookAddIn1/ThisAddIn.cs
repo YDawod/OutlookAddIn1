@@ -118,6 +118,7 @@ namespace OutlookAddIn1
                         string subject = mail.Subject;
 
                         string productName = subject.Substring(7, subject.Length - 7);
+                        productName = productName.Replace("'", "''");
 
                         SqlConnection cn = new SqlConnection(connectionString);
                         SqlCommand cmd = new SqlCommand();
@@ -131,7 +132,7 @@ namespace OutlookAddIn1
                         cmd.CommandText = sqlString;
                         cmd.ExecuteNonQuery();
 
-                        sqlString = "UPDATE eBay_ToRemove SET DeleteTime = GETDATE() WHERE eBayListingName = '" + productName + "'";
+                        sqlString = "UPDATE eBay_ToRemove SET DeleteTime = GETDATE() WHERE Name = '" + productName + "'";
                         cmd.CommandText = sqlString;
                         cmd.ExecuteNonQuery();
 
