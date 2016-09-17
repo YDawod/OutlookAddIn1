@@ -21,6 +21,7 @@ namespace OutlookAddIn1
         public string ImageLink { get; set; }
         public string Url { get; set; }
         public int NumberOfImage { get; set; }
+        public string Thumb { get; set;}
 
         public int DescriptionImageWidth { get; set; }
         public int DescriptionImageHeight { get; set; }

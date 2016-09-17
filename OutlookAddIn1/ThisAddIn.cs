@@ -312,6 +312,7 @@ namespace OutlookAddIn1
                 product.eBayListingPrice = Convert.ToDecimal(reader["eBayListingPrice"]);
                 product.DescriptionImageWidth = Convert.ToInt16(reader["DescriptionImageWidth"]);
                 product.DescriptionImageHeight = Convert.ToInt16(reader["DescriptionImageHeight"]);
+                product.Thumb = Convert.ToString(reader["Thumb"]);
             }
 
             reader.Close();
@@ -346,9 +347,9 @@ namespace OutlookAddIn1
 
             sqlString = @"INSERT INTO eBay_CurrentListings
                             (Name, eBayListingName, eBayCategoryID, eBayItemNumber, eBayListingPrice, eBayDescription, 
-                             eBayEndTime, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink) 
+                             eBayEndTime, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink, Thumb) 
                           VALUES (@_name, @_eBayListingName, @_eBayCategoryID, @_eBayItemNumber, @_eBayListingPrice, @_eBayDescription,
-                                @_eBayEndTime, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink)";
+                                @_eBayEndTime, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink, @_Thumb)";
 
             cmd.CommandText = sqlString;
             cmd.Parameters.AddWithValue("@_name", product.Name);
@@ -364,6 +365,7 @@ namespace OutlookAddIn1
             cmd.Parameters.AddWithValue("@_CostcoUrl", product.Url);
             cmd.Parameters.AddWithValue("@_CostcoPrice", product.Price);
             cmd.Parameters.AddWithValue("@_ImageLink", product.ImageLink);
+            cmd.Parameters.AddWithValue("@_Thumb", product.Thumb);
 
             cmd.ExecuteNonQuery();
 
