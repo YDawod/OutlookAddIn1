@@ -307,12 +307,16 @@ namespace OutlookAddIn1
                 product.ImageLink = Convert.ToString(reader["ImageLink"]);
                 product.NumberOfImage = Convert.ToInt16(reader["NumberOfImage"]);
                 product.Url = Convert.ToString(reader["Url"]);
+                product.ImageOptions = Convert.ToString(reader["ImageOptions"]);
+                product.Options = Convert.ToString(reader["Options"]);
+                product.Thumb = Convert.ToString(reader["Thumb"]);
+
                 product.eBayCategoryID = Convert.ToString(reader["eBayCategoryID"]);
                 product.eBayReferencePrice = Convert.ToDecimal(reader["eBayReferencePrice"]);
                 product.eBayListingPrice = Convert.ToDecimal(reader["eBayListingPrice"]);
                 product.DescriptionImageWidth = Convert.ToInt16(reader["DescriptionImageWidth"]);
                 product.DescriptionImageHeight = Convert.ToInt16(reader["DescriptionImageHeight"]);
-                product.Thumb = Convert.ToString(reader["Thumb"]);
+                product.eBayReferenceUrl = Convert.ToString(reader["eBayReferenceUrl"]);
             }
 
             reader.Close();
@@ -347,9 +351,9 @@ namespace OutlookAddIn1
 
             sqlString = @"INSERT INTO eBay_CurrentListings
                             (Name, eBayListingName, eBayCategoryID, eBayItemNumber, eBayListingPrice, eBayDescription, 
-                             eBayEndTime, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink, Thumb) 
+                             eBayEndTime, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice, ImageLink, ImageOptions, CostcoOptions, Thumb, eBayReferenceUrl, eBayReferencePrice) 
                           VALUES (@_name, @_eBayListingName, @_eBayCategoryID, @_eBayItemNumber, @_eBayListingPrice, @_eBayDescription,
-                                @_eBayEndTime, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink, @_Thumb)";
+                                @_eBayEndTime, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice, @_ImageLink, @_ImageOptions, @_Options, @_Thumb, @_eBayReferenceUrl, @_eBayReferencePrice)";
 
             cmd.CommandText = sqlString;
             cmd.Parameters.AddWithValue("@_name", product.Name);
@@ -365,7 +369,11 @@ namespace OutlookAddIn1
             cmd.Parameters.AddWithValue("@_CostcoUrl", product.Url);
             cmd.Parameters.AddWithValue("@_CostcoPrice", product.Price);
             cmd.Parameters.AddWithValue("@_ImageLink", product.ImageLink);
+            cmd.Parameters.AddWithValue("@_ImageOptions", product.ImageOptions);
+            cmd.Parameters.AddWithValue("@_Options", product.Options);
             cmd.Parameters.AddWithValue("@_Thumb", product.Thumb);
+            cmd.Parameters.AddWithValue("@_eBayReferenceUrl", product.eBayReferenceUrl);
+            cmd.Parameters.AddWithValue("@_eBayReferencePrice", product.eBayReferencePrice);
 
             cmd.ExecuteNonQuery();
 

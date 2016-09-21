@@ -21,7 +21,9 @@ namespace OutlookAddIn1
         public string ImageLink { get; set; }
         public string Url { get; set; }
         public int NumberOfImage { get; set; }
-        public string Thumb { get; set;}
+        public string ImageOptions { get; set; } = "";
+        public string Options { get; set; } = "";
+        public string Thumb { get; set; } = "";
 
         public int DescriptionImageWidth { get; set; }
         public int DescriptionImageHeight { get; set; }
@@ -32,5 +34,6 @@ namespace OutlookAddIn1
         public string eBayUrl { get; set; }
         public string eBayCategoryID { get; set; }
         public decimal eBayListingPrice { get; set; }
+        public string eBayReferenceUrl { get; set; }
     }
 }
