@@ -118,7 +118,6 @@ namespace OutlookAddIn1
                         string subject = mail.Subject;
 
                         string productName = subject.Substring(7, subject.Length - 7);
-                        productName = productName.Replace("'", "''");
 
                         SqlConnection cn = new SqlConnection(connectionString);
                         SqlCommand cmd = new SqlCommand();
@@ -128,17 +127,17 @@ namespace OutlookAddIn1
 
                         cn.Open();
 
-                        string sqlString = "UPDATE eBay_CurrentListings SET DeleteDT = GETDATE() WHERE eBayListingName = '" + productName + "'";
+                        string sqlString = "UPDATE eBay_CurrentListings SET DeleteDT = GETDATE() WHERE eBayListingName = '" + productName.Replace("'", "''") + "'";
                         cmd.CommandText = sqlString;
                         cmd.ExecuteNonQuery();
 
-                        sqlString = "UPDATE eBay_ToRemove SET DeleteTime = GETDATE() WHERE Name = '" + productName + "'";
-                        cmd.CommandText = sqlString;
-                        cmd.ExecuteNonQuery();
+                        //sqlString = "UPDATE eBay_ToRemove SET DeleteTime = GETDATE() WHERE Name = '" + productName + "'";
+                        //cmd.CommandText = sqlString;
+                        //cmd.ExecuteNonQuery();
 
-                        sqlString = "DELETE eBayListingChange_Discontinue WHERE Name = '" + productName + "'";
-                        cmd.CommandText = sqlString;
-                        cmd.ExecuteNonQuery();
+                        //sqlString = "DELETE eBayListingChange_Discontinue WHERE Name = '" + productName + "'";
+                        //cmd.CommandText = sqlString;
+                        //cmd.ExecuteNonQuery();
 
                         cn.Close();
                     }
@@ -276,11 +275,11 @@ namespace OutlookAddIn1
             body = body.Replace("\\", "");
             body = body.Replace("\"", "'");
 
-            subject = subject.Replace("'", "''");
+            //subject = subject.Replace("'", "''");
 
             string productName = subject.Substring(32, subject.Length - 32);
 
-            string sqlString = "SELECT * FROM eBay_ToAdd WHERE Name = '" + productName + "' AND DeleteTime is NULL";
+            string sqlString = "SELECT * FROM eBay_ToAdd WHERE eBayName = '" + productName.Replace("'", "''") + "' AND DeleteTime is NULL";
 
             SqlConnection cn = new SqlConnection(connectionString);
             SqlCommand cmd = new SqlCommand();
@@ -296,6 +295,7 @@ namespace OutlookAddIn1
                 reader.Read();
 
                 product.Name = Convert.ToString(reader["Name"]);
+                product.eBayName = Convert.ToString(reader["eBayName"]);
                 product.UrlNumber = Convert.ToString(reader["UrlNumber"]);
                 product.ItemNumber = Convert.ToString(reader["ItemNumber"]);
                 product.Category = Convert.ToString(reader["Category"]);
@@ -322,7 +322,7 @@ namespace OutlookAddIn1
             reader.Close();
 
             //sqlString = @"DELETE FROM eBay_ToAdd WHERE name = '" + productName + "'";
-            sqlString = @"UPDATE eBay_ToAdd SET DeleteTime = GETDATE() WHERE name = '" + productName + "'";
+            sqlString = @"UPDATE eBay_ToAdd SET DeleteTime = GETDATE() WHERE eBayName = '" + productName.Replace("'", "''") + "'";
             cmd.CommandText = sqlString;
             cmd.ExecuteNonQuery();
 
@@ -357,7 +357,7 @@ namespace OutlookAddIn1
 
             cmd.CommandText = sqlString;
             cmd.Parameters.AddWithValue("@_name", product.Name);
-            cmd.Parameters.AddWithValue("@_eBayListingName", productName);
+            cmd.Parameters.AddWithValue("@_eBayListingName", product.eBayName);
             cmd.Parameters.AddWithValue("@_eBayCategoryID", product.eBayCategoryID);
             cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemId);
             cmd.Parameters.AddWithValue("@_eBayListingPrice", product.eBayListingPrice);
