@@ -155,6 +155,7 @@ namespace OutlookAddIn1
                     {
                         string body = mail.HTMLBody;
                         body = body.Replace("\n", "");
+                        body = body.Replace("\r", "");
                         body = body.Replace("\t", "");
                         body = body.Replace("\\", "");
                         body = body.Replace("\"", "'");
