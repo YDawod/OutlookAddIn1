@@ -19,7 +19,8 @@ namespace OutlookAddIn1
         public int eBayRemainingQuality { get; set; }
         public decimal eBaySoldPrice { get; set; }
         public string eBayUrl { get; set; }
-        public string eBaySoldEmailPdf { get; set;}
+        public string eBaySoldVariation { get; set; }
+        public string eBaySoldEmailPdf { get; set; }
         public string BuyerName { get; set; }
         public string BuyerID { get; set; }
         public string BuyerAddress1 { get; set; }
@@ -37,6 +38,7 @@ namespace OutlookAddIn1
         public string CostcoItemName { get; set; }
         public string CostcoItemNumber { get; set; }
         public string CostcoTrackingNumber { get; set; }
+        public string CostcoOrderDate { get; set; }
         public string CostcoShipDate { get; set; }
         public string CostcoTaxExemptPdf { get; set; }
         public string CostcoOrderEmailPdf { get; set; }

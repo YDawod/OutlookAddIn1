@@ -13,6 +13,7 @@ using OpenQA.Selenium;
 using System.Net;
 using iTextSharp.text.pdf;
 using iTextSharp.text;
+using OpenQA.Selenium.Chrome;
 
 namespace OutlookAddIn1
 {
@@ -585,9 +586,13 @@ namespace OutlookAddIn1
         {
             try
             {
-                string stItemNum = SubstringInBetween(subject, "(", ")", false, false);
+                int iLastSpace = subject.LastIndexOf(' ');
+                string stItemNum = subject.Substring(iLastSpace, subject.Length - iLastSpace);
+                stItemNum = stItemNum.Trim();
 
-                subject = subject.Replace("(" + stItemNum + ")", "");
+                //string stItemNum = SubstringInBetween(subject, "(", ")", false, false);
+
+                subject = subject.Replace(stItemNum, "");
                 subject = subject.Replace("Your eBay item sold!", "");
 
                 string stItemName = subject.Trim();
@@ -596,54 +601,73 @@ namespace OutlookAddIn1
 
                 body = WebUtility.HtmlDecode(body);
 
-                string stUrl = SubstringEndBack(body, ">" + stItemName, "<a href=", false, false);
+                body = SubstringInBetween(body, @"<body", @"</body>", true, true);
 
+                string stUrl = SubstringEndBack(body, ">" + stItemName, "<a href =", false, false);
                 stUrl = SubstringInBetween(stUrl, "'", "'", false, false);
 
-                string stEndTime = SubstringInBetween(body, "End time:", "PDT", false, true);
+                string stPaid = SubstringInBetween(body, "Paid:", @"<br>", false, false);
+                stPaid = stPaid.Replace("$", "");
+                stPaid = stPaid.Trim();
 
-                stEndTime = SubstringEndBack(stEndTime, "PDT", ">", false, true);
+                string stSize = SubstringInBetween(body, @"Size:", @"</td>", false, false);
+                stSize = stSize.Trim();
 
-                string correctedTZ = stEndTime.Replace("PDT", "-0700");
-                DateTime dt = Convert.ToDateTime(correctedTZ);
+                string stDateSold = SubstringInBetween(body, @"Date Sold:", @"</td>", false, false);
+                stDateSold = stDateSold.Trim();
 
-                string stPrice = SubstringInBetween(body, "Sale price:", "Quantity:", false, false);
+                string stQuantitySold = SubstringInBetween(body, @"Quantity Sold:", @"</td>", false, false);
+                stQuantitySold = stQuantitySold.Trim();
 
-                stPrice = SubstringInBetween(stPrice, "$", "<", false, false);
+                string stBuyer = SubstringEndBack(body, "Contact Buyer", "Buyer", false, false);
+                stBuyer = stBuyer.Replace(@"&nbsp", "");
+                stBuyer = TrimTags(stBuyer);
+                stBuyer = stBuyer.Substring(0, stBuyer.IndexOf("<"));
 
-                string stQuantity = SubstringInBetween(body, "Quantity:", "Quantity sold:", false, false);
+                //string stEndTime = SubstringInBetween(body, "End time:", "PDT", false, true);
 
-                stQuantity = TrimTags(stQuantity);
+                //stEndTime = SubstringEndBack(stEndTime, "PDT", ">", false, true);
 
-                stQuantity = stQuantity.Substring(0, stQuantity.IndexOf("<"));
+                //string correctedTZ = stEndTime.Replace("PDT", "-0700");
+                //DateTime dt = Convert.ToDateTime(correctedTZ);
 
-                string stQuantitySold = SubstringInBetween(body, "Quantity sold:", "Quantity remaining:", false, false);
+                //string stPrice = SubstringInBetween(body, "Sale price:", "Quantity:", false, false);
 
-                stQuantitySold = TrimTags(stQuantitySold);
+                //stPrice = SubstringInBetween(stPrice, "$", "<", false, false);
 
-                stQuantitySold = stQuantitySold.Substring(0, stQuantitySold.IndexOf("<"));
+                //string stQuantity = SubstringInBetween(body, "Quantity:", "Quantity sold:", false, false);
 
-                string stQuantityRemaining = SubstringInBetween(body, "Quantity remaining:", "Buyer:", false, false);
+                //stQuantity = TrimTags(stQuantity);
 
-                stQuantityRemaining = TrimTags(stQuantityRemaining);
+                //stQuantity = stQuantity.Substring(0, stQuantity.IndexOf("<"));
 
-                stQuantityRemaining = stQuantityRemaining.Substring(0, stQuantityRemaining.IndexOf("<"));
+                //string stQuantitySold = SubstringInBetween(body, "Quantity sold:", "Quantity remaining:", false, false);
 
-                string stBuyerName = SubstringInBetween(body, "Buyer:", "<div>", false, false);
+                //stQuantitySold = TrimTags(stQuantitySold);
 
-                stBuyerName = TrimTags(stBuyerName);
+                //stQuantitySold = stQuantitySold.Substring(0, stQuantitySold.IndexOf("<"));
 
-                stBuyerName = stBuyerName.Substring(0, stBuyerName.IndexOf("<"));
+                //string stQuantityRemaining = SubstringInBetween(body, "Quantity remaining:", "Buyer:", false, false);
 
-                string stBuyerId = SubstringInBetween(body, stBuyerName, "(<a href='mailto", false, true);
+                //stQuantityRemaining = TrimTags(stQuantityRemaining);
 
-                stBuyerId = TrimTags(stBuyerId);
+                //stQuantityRemaining = stQuantityRemaining.Substring(0, stQuantityRemaining.IndexOf("<"));
 
-                stBuyerId = stBuyerId.Substring(0, stBuyerId.IndexOf("(<a href='mailto"));
+                //string stBuyerName = SubstringInBetween(body, "Buyer:", "<div>", false, false);
 
-                stBuyerId = stBuyerId.Trim();
+                //stBuyerName = TrimTags(stBuyerName);
 
-                string stBuyerEmail = SubstringInBetween(body, "(<a href='mailto:", "'", false, false);
+                //stBuyerName = stBuyerName.Substring(0, stBuyerName.IndexOf("<"));
+
+                //string stBuyerId = SubstringInBetween(body, stBuyerName, "(<a href='mailto", false, true);
+
+                //stBuyerId = TrimTags(stBuyerId);
+
+                //stBuyerId = stBuyerId.Substring(0, stBuyerId.IndexOf("(<a href='mailto"));
+
+                //stBuyerId = stBuyerId.Trim();
+
+                //string stBuyerEmail = SubstringInBetween(body, "(<a href='mailto:", "'", false, false);
 
                 // Generate PDF for email
                 //string destinationFileName = dt.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".html";
@@ -671,12 +695,12 @@ namespace OutlookAddIn1
 
                 string sourceFileName = sourceFileFullName.Replace(@"C:\temp\tempPDF\", "");
 
-                string destinationFileName = dt.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".pdf";
+                string destinationFileName = DateTime.Now.ToString("yyyyMMddHHmmss") + "_" + stItemNum + ".pdf";
 
                 File.Delete(@"C:\temp\eBaySoldEmails\" + destinationFileName);
 
-                File.Move(sourceFileFullName, @"C:\temp\eBaySoldEmails\" + destinationFileName);
-                
+                File.Move(sourceFileFullName, @"C:\eBayApp\Files\Emails\eBaySoldEmails\" + destinationFileName);
+
 
                 // db stuff
                 SqlConnection cn = new SqlConnection(connectionString);
@@ -700,7 +724,7 @@ namespace OutlookAddIn1
                     eBayProduct.eBayItemNumber = Convert.ToString(reader["eBayItemNumber"]);
                     eBayProduct.eBayListingPrice = Convert.ToDecimal(reader["eBayListingPrice"]);
                     eBayProduct.eBayDescription = Convert.ToString(reader["eBayDescription"]);
-                   // eBayProduct.eBayListingDT = Convert.ToDateTime(reader["eBayListingDT"]);
+                    // eBayProduct.eBayListingDT = Convert.ToDateTime(reader["eBayListingDT"]);
                     eBayProduct.eBayUrl = Convert.ToString(reader["eBayUrl"]);
                     eBayProduct.CostcoUrlNumber = Convert.ToString(reader["CostcoUrlNumber"]);
                     eBayProduct.CostcoItemNumber = Convert.ToString(reader["CostcoItemNumber"]);
@@ -724,26 +748,27 @@ namespace OutlookAddIn1
                 if (!bExist)
                 {
                     sqlString = @"INSERT INTO eBay_SoldTransactions 
-                              (eBayItemNumber, eBaySoldDateTime, eBayItemName, eBayUrl, eBaySoldPrice, eBayListingQuality, eBaySoldQuality, eBayRemainingQuality, eBaySoldEmailPdf,
-                               BuyerName, BuyerID, BuyerEmail, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice)
-                              VALUES (@_eBayItemNumber, @_eBaySoldDateTime, @_eBayItemName, @_eBayUrl, @_eBayPrice, @_eBayListingQuality, @_eBaySoldQuality, @_eBayRemainingQuality, @_eBaySoldEmailPdf,
-                               @_BuyerName, @_BuyerID, @_BuyerEmail, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice)";
+                              (eBayItemNumber, eBaySoldDateTime, eBayItemName, eBayUrl, eBaySoldVariation, eBaySoldPrice, eBaySoldQuality, eBaySoldEmailPdf,
+                               BuyerID, CostcoUrlNumber, CostcoItemNumber, CostcoUrl, CostcoPrice)
+                              VALUES (@_eBayItemNumber, @_eBaySoldDateTime, @_eBayItemName, @_eBayUrl, @_eBaySoldVariation, @_eBayPrice, @_eBaySoldQuality,  @_eBaySoldEmailPdf,
+                               @_BuyerID, @_CostcoUrlNumber, @_CostcoItemNumber, @_CostcoUrl, @_CostcoPrice)";
 
                     cmd.CommandText = sqlString;
 
                     cmd.Parameters.Clear();
                     cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
-                    cmd.Parameters.AddWithValue("@_eBaySoldDateTime", dt);
+                    cmd.Parameters.AddWithValue("@_eBaySoldDateTime", Convert.ToDateTime(stDateSold));
                     cmd.Parameters.AddWithValue("@_eBayItemName", stItemName);
                     cmd.Parameters.AddWithValue("@_eBayUrl", stUrl);
-                    cmd.Parameters.AddWithValue("@_eBayPrice", Convert.ToDecimal(stPrice));
-                    cmd.Parameters.AddWithValue("@_eBayListingQuality", Convert.ToInt16(stQuantity));
+                    cmd.Parameters.AddWithValue("@_eBaySoldVariation", stSize);
+                    cmd.Parameters.AddWithValue("@_eBayPrice", Convert.ToDecimal(eBayProduct.eBayListingPrice));
+                    // cmd.Parameters.AddWithValue("@_eBayListingQuality", Convert.ToInt16(stQuantity));
                     cmd.Parameters.AddWithValue("@_eBaySoldQuality", Convert.ToInt16(stQuantitySold));
-                    cmd.Parameters.AddWithValue("@_eBayRemainingQuality", Convert.ToInt16(stQuantityRemaining));
+                    // cmd.Parameters.AddWithValue("@_eBayRemainingQuality", Convert.ToInt16(stQuantityRemaining));
                     cmd.Parameters.AddWithValue("@_eBaySoldEmailPdf", destinationFileName);
-                    cmd.Parameters.AddWithValue("@_BuyerName", stBuyerName);
-                    cmd.Parameters.AddWithValue("@_BuyerID", stBuyerId);
-                    cmd.Parameters.AddWithValue("@_BuyerEmail", stBuyerEmail);
+                    cmd.Parameters.AddWithValue("@_BuyerID", stBuyer);
+                    //cmd.Parameters.AddWithValue("@_BuyerID", stBuyerId);
+                    //cmd.Parameters.AddWithValue("@_BuyerEmail", stBuyerEmail);
                     cmd.Parameters.AddWithValue("@_CostcoUrlNumber", eBayProduct.CostcoUrlNumber);
                     cmd.Parameters.AddWithValue("@_CostcoItemNumber", eBayProduct.CostcoItemNumber);
                     cmd.Parameters.AddWithValue("@_CostcoUrl", eBayProduct.CostcoUrl);
@@ -785,12 +810,25 @@ namespace OutlookAddIn1
             }
         }
 
-        private void OrderCostcoProduct(eBaySoldProduct soldProduct)
+        private bool hasElement(IWebElement webElement, By by)
         {
             try
             {
-                IWebDriver driver = new FirefoxDriver();
+                webElement.FindElement(by);
+                return true;
+            }
+            catch (NoSuchElementException e)
+            {
+                return false;
+            }
+        }
 
+        private void OrderCostcoProduct(eBaySoldProduct soldProduct)
+        {
+            IWebDriver driver = new ChromeDriver();
+
+            try
+            {
                 driver.Navigate().GoToUrl("https://www.costco.com/LogonForm");
                 driver.FindElement(By.Id("logonId")).SendKeys("zjding@gmail.com");
                 driver.FindElement(By.Id("logonPassword")).SendKeys("721123");
@@ -806,14 +844,61 @@ namespace OutlookAddIn1
                 }
 
                 driver.Navigate().GoToUrl(soldProduct.CostcoUrl);
+
+                IWebElement eProductDetails = driver.FindElement(By.Id("product-details"));
+                if (hasElement(eProductDetails, By.Id("variants")))
+                {
+                    var eVariants = eProductDetails.FindElement(By.Id("variants"));
+
+                    var productOptions = eVariants.FindElements(By.ClassName("swatchDropdown"));
+
+                    List<string> selectList = new List<string>();
+
+                    foreach (var productOption in productOptions)
+                    {
+                        selectList.Add(productOption.FindElement(By.TagName("select")).GetAttribute("id").ToString());
+                    }
+
+                    if (selectList.Count == 1)
+                    {
+                        IWebElement selectElement0 = eProductDetails.FindElement(By.Id(selectList[0]));
+                        var options0 = selectElement0.FindElements(By.TagName("option"));
+                        foreach (IWebElement option0 in options0)
+                        {
+                            if (options0.IndexOf(option0) > 0)
+                            {
+                                if (option0.Text.Contains("$"))
+                                {
+                                    int index = option0.Text.LastIndexOf("- $");
+                                    if (option0.Text.Substring(0, index - 1).Trim() == soldProduct.eBaySoldVariation)
+                                    {
+                                        option0.Click();
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (option0.Text.Trim() == soldProduct.eBaySoldVariation)
+                                    {
+                                        option0.Click();
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 driver.FindElement(By.Id("minQtyText")).Clear();
                 driver.FindElement(By.Id("minQtyText")).SendKeys("1");
-                driver.FindElement(By.Id("addToCartBtn")).Click();
+                driver.FindElement(By.Name("add-to-cart")).Click();
 
-                if (isAlertPresents(ref driver))
-                    driver.SwitchTo().Alert().Accept();
+                //if (isAlertPresents(ref driver))
+                //    driver.SwitchTo().Alert().Accept();
 
-                driver.FindElement(By.Id("cart-d")).Click();
+                driver.Navigate().GoToUrl("https://www.costco.com/CheckoutCartView");
+
+                //driver.FindElement(By.Id("cart-d")).Click();
 
                 if (isAlertPresents(ref driver))
                     driver.SwitchTo().Alert().Accept();
@@ -871,7 +956,7 @@ namespace OutlookAddIn1
             }
             finally
             {
-
+                driver.Dispose();
             }
         }
 
@@ -996,197 +1081,307 @@ namespace OutlookAddIn1
 
         private void ProcessPaymentReceivedEmail(string html)
         {
-            string body = html;
+            {
+                string body = html;
 
-            // TransactionID
-            string stTime = SubstringEndBack(body, "PDT", ">", false, true);
+                Dictionary<string, string> timeZones = new Dictionary<string, string>() {
+            {"ACDT", "+1030"},
+            {"ACST", "+0930"},
+            {"ADT", "-0300"},
+            {"AEDT", "+1100"},
+            {"AEST", "+1000"},
+            {"AHDT", "-0900"},
+            {"AHST", "-1000"},
+            {"AST", "-0400"},
+            {"AT", "-0200"},
+            {"AWDT", "+0900"},
+            {"AWST", "+0800"},
+            {"BAT", "+0300"},
+            {"BDST", "+0200"},
+            {"BET", "-1100"},
+            {"BST", "-0300"},
+            {"BT", "+0300"},
+            {"BZT2", "-0300"},
+            {"CADT", "+1030"},
+            {"CAST", "+0930"},
+            {"CAT", "-1000"},
+            {"CCT", "+0800"},
+            {"CDT", "-0500"},
+            {"CED", "+0200"},
+            {"CET", "+0100"},
+            {"CEST", "+0200"},
+            {"CST", "-0600"},
+            {"EAST", "+1000"},
+            {"EDT", "-0400"},
+            {"EED", "+0300"},
+            {"EET", "+0200"},
+            {"EEST", "+0300"},
+            {"EST", "-0500"},
+            {"FST", "+0200"},
+            {"FWT", "+0100"},
+            {"GMT", "GMT"},
+            {"GST", "+1000"},
+            {"HDT", "-0900"},
+            {"HST", "-1000"},
+            {"IDLE", "+1200"},
+            {"IDLW", "-1200"},
+            {"IST", "+0530"},
+            {"IT", "+0330"},
+            {"JST", "+0900"},
+            {"JT", "+0700"},
+            {"MDT", "-0600"},
+            {"MED", "+0200"},
+            {"MET", "+0100"},
+            {"MEST", "+0200"},
+            {"MEWT", "+0100"},
+            {"MST", "-0700"},
+            {"MT", "+0800"},
+            {"NDT", "-0230"},
+            {"NFT", "-0330"},
+            {"NT", "-1100"},
+            {"NST", "+0630"},
+            {"NZ", "+1100"},
+            {"NZST", "+1200"},
+            {"NZDT", "+1300"},
+            {"NZT", "+1200"},
+            {"PDT", "-0700"},
+            {"PST", "-0800"},
+            {"ROK", "+0900"},
+            {"SAD", "+1000"},
+            {"SAST", "+0900"},
+            {"SAT", "+0900"},
+            {"SDT", "+1000"},
+            {"SST", "+0200"},
+            {"SWT", "+0100"},
+            {"USZ3", "+0400"},
+            {"USZ4", "+0500"},
+            {"USZ5", "+0600"},
+            {"USZ6", "+0700"},
+            {"UT", "-0000"},
+            {"UTC", "-0000"},
+            {"UZ10", "+1100"},
+            {"WAT", "-0100"},
+            {"WET", "-0000"},
+            {"WST", "+0800"},
+            {"YDT", "-0800"},
+            {"YST", "-0900"},
+            {"ZP4", "+0400"},
+            {"ZP5", "+0500"},
+            {"ZP6", "+0600"}
+        };
 
-            DateTime dtTime = Convert.ToDateTime(stTime.Replace("PDT", "-0700"));
+                // TransactionID
+                string stTime = SubstringEndBack(body, "Transaction ID:", "<td ", true, false);
+                stTime = TrimTags(stTime);
+                stTime = stTime.Replace("<br>", "");
 
-            string stTransactionID = SubstringInBetween(body, "Transaction ID:", "</a>", true, true);
 
-            stTransactionID = SubstringEndBack(stTransactionID, "</a>", ">", false, false);
+                string stTimeZone = stTime.Substring(stTime.LastIndexOf(' ') + 1, stTime.Length - stTime.LastIndexOf(' ') - 1);
 
-            // Buyer Name
-            string stBuyer = SubstringInBetween(body, "Buyer", @"</a>", true, true);
+                DateTime dtTime = Convert.ToDateTime(stTime.Replace(stTimeZone, timeZones[stTimeZone]));
 
-            string stFullName = SubstringInBetween(stBuyer, "<br>", "<br>", false, false);
+                string stTransactionID = SubstringInBetween(body, "Transaction ID:", "</a>", true, true);
 
-            stBuyer = stBuyer.Replace("<br>" + stFullName + "<br>", "");
+                stTransactionID = SubstringEndBack(stTransactionID, "</a>", ">", false, false);
 
-            string stUserID = SubstringInBetween(stBuyer, @"</span>", "<br>", false, false);
+                // Buyer Name
+                string stBuyer = SubstringInBetween(body, "Buyer", @"</a>", false, true);
 
-            string stUserEmail = SubstringEndBack(stBuyer, @"</a>", ">", false, false);
+                string stFullName = SubstringInBetween(stBuyer, "<br>", "<br>", false, false);
 
-            // Shipping Address
-            string stShippingAddress = SubstringInBetween(body, "Shipping address", "</td>", true, false);
+                stBuyer = stBuyer.Replace("<br>" + stFullName + "<br>", "");
 
-            string stShippingName = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
+                string stUserID = SubstringInBetween(stBuyer, @"</span>", "<br>", false, false);
 
-            stShippingAddress = stShippingAddress.Replace("<br>" + stShippingName, "");
+                stBuyer = stBuyer.Replace(stUserID, "");
+                stBuyer = TrimTags(stBuyer);
 
-            string stShippingAddress1 = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
+                string stUserEmail = stBuyer.Substring(0, stBuyer.IndexOf('<'));
 
-            stShippingAddress = stShippingAddress.Replace("<br>" + stShippingAddress1, "");
 
-            string stShippingAddress2 = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
+                // Shipping Address
+                string stShippingAddress = SubstringInBetween(body, "Shipping address", "</td>", true, false);
 
-            string stShippingCity = stShippingAddress2.Substring(0, stShippingAddress2.IndexOf(","));
+                string stShippingName = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
 
-            string stShippingState = SubstringInBetween(stShippingAddress2, "&nbsp;", "&nbsp;", false, false);
+                stShippingAddress = stShippingAddress.Replace("<br>" + stShippingName, "");
 
-            stShippingAddress2 = stShippingAddress2.Replace(stShippingCity, "");
-            stShippingAddress2 = stShippingAddress2.Replace(stShippingState, "");
-            stShippingAddress2 = stShippingAddress2.Replace("&nbsp;", "");
-            stShippingAddress2 = stShippingAddress2.Replace(",", "");
+                string stShippingAddress1 = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
 
-            string stShippingZip = stShippingAddress2;
+                stShippingAddress = stShippingAddress.Replace("<br>" + stShippingAddress1, "");
 
-            // Buyer note
-            string stBuyerNote = SubstringInBetween(body, "Note to seller", "</td>", false, true);
-            stBuyerNote = SubstringInBetween(stBuyerNote, "<br>", "</td>", false, false);
-            stBuyerNote = stBuyerNote.Replace("The buyer hasn't sent a note.", "");
+                string stShippingAddress2 = SubstringInBetween(stShippingAddress, "<br>", "<br>", false, false);
 
-            // Item 
-            string stItemNum = SubstringInBetween(body, "Item#", "</td>", false, false);
-            stItemNum = stItemNum.Trim();
+                string stShippingCity = stShippingAddress2.Substring(0, stShippingAddress2.IndexOf(","));
 
-            string stItemName = SubstringInBetween(body, "<a href='http://cgi.ebay.com/ws/eBayISAPI.dll?ViewItem&amp;item=" + stItemNum + "' target='_blank'>", @"</a>", false, false);
+                string stShippingState = SubstringInBetween(stShippingAddress2, "&nbsp;", "&nbsp;", false, false);
 
-            // Amount
-            string stAmount = SubstringInBetween(body, "Item# " + stItemNum, @"</table>", false, false);
+                stShippingAddress2 = stShippingAddress2.Replace(stShippingCity, "");
+                stShippingAddress2 = stShippingAddress2.Replace(stShippingState, "");
+                stShippingAddress2 = stShippingAddress2.Replace("&nbsp;", "");
+                stShippingAddress2 = stShippingAddress2.Replace(",", "");
 
-            stAmount = TrimTags(stAmount);
+                string stShippingZip = stShippingAddress2;
 
-            string stUnitePrice = stAmount.Substring(0, stAmount.IndexOf("<"));
-            stUnitePrice = stUnitePrice.Replace("$", "");
-            stUnitePrice = stUnitePrice.Replace("USD", "");
-            stUnitePrice = stUnitePrice.Trim();
+                // Buyer note
+                string stBuyerNote = SubstringInBetween(body, "Note to seller", "</td>", false, true);
+                stBuyerNote = SubstringInBetween(stBuyerNote, "<br>", "</td>", false, false);
+                stBuyerNote = stBuyerNote.Replace("The buyer hasn't sent a note.", "");
 
-            stAmount = stAmount.Substring(stUnitePrice.Length+5);
+                // Item 
+                string stItemNum = SubstringInBetween(body, "Item#", "</td>", false, false);
+                stItemNum = stItemNum.Trim();
 
-            stAmount = TrimTags(stAmount);
+                string stItemName = SubstringEndBack(body, "Item# " + stItemNum, "<a target='new' href='http://cgi.ebay.com/ws/eBayISAPI.dll?ViewItem&amp;item=" + stItemNum, true, false);
+                stItemName = TrimTags(stItemName);
+                stItemName = stItemName.Substring(0, stItemName.IndexOf('<'));
 
-            string stQuatity = stAmount.Substring(0, stAmount.IndexOf("<"));
+                // Amount
+                string stAmount = SubstringInBetween(body, "Item# " + stItemNum, @"</table>", false, false);
+                stAmount = TrimTags(stAmount);
+                //stAmount = stAmount.Substring(0, stAmount.IndexOf('<'));
 
-            stAmount = stAmount.Substring(stQuatity.Length);
+                string stUnitePrice = stAmount.Substring(0, stAmount.IndexOf("<"));
+                stUnitePrice = stUnitePrice.Replace("$", "");
+                stUnitePrice = stUnitePrice.Replace("USD", "");
+                stUnitePrice = stUnitePrice.Trim();
 
-            stAmount = TrimTags(stAmount);
+                stAmount = stAmount.Substring(stUnitePrice.Length + 5);
 
-            string stTotal = stAmount.Substring(0, stAmount.IndexOf("<"));
-            stTotal = stTotal.Replace("$", "");
-            stTotal = stTotal.Replace("USD", "");
-            stTotal = stTotal.Trim();
+                stAmount = TrimTags(stAmount);
 
-            // Generate PDF for email
-            File.WriteAllText(@"C:\temp\temp.html", body);
+                string stQuatity = stAmount.Substring(0, stAmount.IndexOf("<"));
 
-            FirefoxProfile profile = new FirefoxProfile();
-            profile.SetPreference("print.always_print_silent", true);
+                stAmount = stAmount.Substring(stQuatity.Length);
 
-            IWebDriver driver = new FirefoxDriver(profile);
+                stAmount = TrimTags(stAmount);
 
-            driver.Navigate().GoToUrl(@"file:///C:/temp/temp.html");
+                string stTotal = stAmount.Substring(0, stAmount.IndexOf("<"));
+                stTotal = stTotal.Replace("$", "");
+                stTotal = stTotal.Replace("USD", "");
+                stTotal = stTotal.Trim();
 
-            IJavaScriptExecutor js = driver as IJavaScriptExecutor;
+                // Tax 
+                string stTax = SubstringInBetween(body, "Tax", "Total", false, false);
+                stTax = TrimTags(stTax);
+                stTax = stTax.Substring(0, stTax.IndexOf("<"));
+                stTax = stTax.Replace("$", "");
+                stTax = stTax.Replace("USD", "");
+                stTax = stTax.Trim();
 
-            js.ExecuteScript("window.print();");
+                // Generate PDF for email
+                File.WriteAllText(@"C:\temp\temp.html", body);
 
-            driver.Dispose();
+                FirefoxProfile profile = new FirefoxProfile();
+                profile.SetPreference("print.always_print_silent", true);
 
-            System.Threading.Thread.Sleep(3000);
+                IWebDriver driver = new FirefoxDriver(profile);
 
-            // Process files
-            string[] files = Directory.GetFiles(@"C:\temp\tempPDF\");
+                driver.Navigate().GoToUrl(@"file:///C:/temp/temp.html");
 
-            string sourceFileFullName = files[0];
+                IJavaScriptExecutor js = driver as IJavaScriptExecutor;
 
-            string sourceFileName = sourceFileFullName.Replace(@"C:\temp\tempPDF\", "");
+                js.ExecuteScript("window.print();");
 
-            string destinationFileName = dtTime.ToString("yyyyMMddHHmmss") + "_" + stTransactionID + ".pdf";
+                driver.Dispose();
 
-            File.Delete(@"C:\temp\PaypalPaidEmails\" + destinationFileName);
+                System.Threading.Thread.Sleep(3000);
 
-            File.Move(sourceFileFullName, @"C:\temp\PaypalPaidEmails\" + destinationFileName);
+                // Process files
+                string[] files = Directory.GetFiles(@"C:\temp\tempPDF\");
 
-            sourceFileFullName = destinationFileName;
-            destinationFileName = dtTime.ToString("yyyyMMdd") + "-" + stTotal + "-" + "Paypal" + stTransactionID + ".pdf";
-            File.Delete(@"C:\Users\Jason Ding\Dropbox\Bookkeeping\Income\" + destinationFileName);
-            File.Copy(@"C:\temp\PaypalPaidEmails\" + sourceFileFullName, @"C:\Users\Jason Ding\Dropbox\Bookkeeping\Income\" + destinationFileName);
+                string sourceFileFullName = files[0];
 
-            // db stuff
-            SqlConnection cn = new SqlConnection(connectionString);
-            SqlCommand cmd = new SqlCommand();
-            cmd.Connection = cn;
-            cn.Open();
+                string sourceFileName = sourceFileFullName.Replace(@"C:\temp\tempPDF\", "");
 
-            string sqlString = @"UPDATE eBay_SoldTransactions SET PaypalTransactionID = @_paypalTransactionID, 
+                string destinationFileName = dtTime.ToString("yyyyMMddHHmmss") + "_" + stTransactionID + ".pdf";
+
+                File.Delete(@"C:\eBayApp\Files\Emails\PaypalPaidEmails\" + destinationFileName);
+
+                File.Move(sourceFileFullName, @"C:\eBayApp\Files\Emails\PaypalPaidEmails\" + destinationFileName);
+
+                sourceFileFullName = destinationFileName;
+                destinationFileName = dtTime.ToString("yyyyMMdd") + "-" + stTotal + "-" + "Paypal" + stTransactionID + ".pdf";
+                File.Delete(@"C:\Users\Jason Ding\Dropbox\Bookkeeping\Income\" + destinationFileName);
+                File.Copy(@"C:\eBayApp\Files\Emails\PaypalPaidEmails\" + sourceFileFullName, @"C:\Users\Jason Ding\Dropbox\Bookkeeping\Income\" + destinationFileName);
+
+                // db stuff
+                SqlConnection cn = new SqlConnection(connectionString);
+                SqlCommand cmd = new SqlCommand();
+                cmd.Connection = cn;
+                cn.Open();
+
+                string sqlString = @"UPDATE eBay_SoldTransactions SET PaypalTransactionID = @_paypalTransactionID, 
                                 PaypalPaidDateTime = @_paypalPaidDateTime, PaypalPaidEmailPdf = @_paypalPaidEmailPdf,
+                                BuyerEmail = @_buyerEmail,
+                                BuyerName = @_buyerName,
                                 BuyerAddress1 = @_buyerAddress1, 
-                                BuyerAddress2 = @_buyAddress2, BuyerCity = @_buyerCity, 
+                                BuyerCity = @_buyerCity, 
                                 BuyerState = @_buyerState, BuyerZip = @_buyerZip, BuyerNote = @_buyerNote,
-                                eBaySoldQuality = @_eBaySoldQuality
+                                eBaySoldQuality = @_eBaySoldQuality, eBaySaleTax = @_eBaySaleTax
                                 WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
 
-            cmd.CommandText = sqlString;
-            cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
-            cmd.Parameters.AddWithValue("@_paypalPaidDateTime", dtTime);
-            cmd.Parameters.AddWithValue("@_paypalPaidEmailPdf", destinationFileName);
-            cmd.Parameters.AddWithValue("@_buyerAddress1", stShippingAddress1);
-            cmd.Parameters.AddWithValue("@_buyAddress2", stShippingAddress2);
-            cmd.Parameters.AddWithValue("@_buyerCity", stShippingCity);
-            cmd.Parameters.AddWithValue("@_buyerState", stShippingState);
-            cmd.Parameters.AddWithValue("@_buyerZip", stShippingZip);
-            cmd.Parameters.AddWithValue("@_buyerNote", stBuyerNote);
-            cmd.Parameters.AddWithValue("@_eBaySoldQuality", stQuatity);
-            cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
-            cmd.Parameters.AddWithValue("@_buyerID", stUserID);
+                cmd.CommandText = sqlString;
+                cmd.Parameters.AddWithValue("@_paypalTransactionID", stTransactionID);
+                cmd.Parameters.AddWithValue("@_paypalPaidDateTime", dtTime);
+                cmd.Parameters.AddWithValue("@_paypalPaidEmailPdf", destinationFileName);
+                cmd.Parameters.AddWithValue("@_buyerEmail", stUserEmail);
+                cmd.Parameters.AddWithValue("@_buyerName", stFullName);
+                cmd.Parameters.AddWithValue("@_buyerAddress1", stShippingAddress1);
+                //cmd.Parameters.AddWithValue("@_buyAddress2", stShippingAddress2);
+                cmd.Parameters.AddWithValue("@_buyerCity", stShippingCity);
+                cmd.Parameters.AddWithValue("@_buyerState", stShippingState);
+                cmd.Parameters.AddWithValue("@_buyerZip", stShippingZip);
+                cmd.Parameters.AddWithValue("@_buyerNote", stBuyerNote);
+                cmd.Parameters.AddWithValue("@_eBaySoldQuality", stQuatity);
+                cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
+                cmd.Parameters.AddWithValue("@_eBaySaleTax", stTax);
+                cmd.Parameters.AddWithValue("@_buyerID", stUserID);
 
-            cmd.ExecuteNonQuery();
+                cmd.ExecuteNonQuery();
 
-            sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
+                sqlString = @"SELECT * FROM eBay_SoldTransactions WHERE eBayItemNumber = @_eBayItemNumber AND BuyerID = @_buyerID";
 
-            cmd.CommandText = sqlString;
-            cmd.Parameters.Clear();
-            cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
-            cmd.Parameters.AddWithValue("@_buyerID", stUserID);
+                cmd.CommandText = sqlString;
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@_eBayItemNumber", stItemNum);
+                cmd.Parameters.AddWithValue("@_buyerID", stUserID);
 
-            eBaySoldProduct soldProduct = new eBaySoldProduct();
+                eBaySoldProduct soldProduct = new eBaySoldProduct();
 
-            SqlDataReader reader = cmd.ExecuteReader();
-            if (reader.HasRows)
-            {
-                reader.Read();
+                SqlDataReader reader = cmd.ExecuteReader();
+                if (reader.HasRows)
+                {
+                    reader.Read();
 
-                soldProduct.PaypalTransactionID = Convert.ToString(reader["PaypalTransactionID"]);
-                soldProduct.PaypalPaidDateTime = Convert.ToDateTime(reader["PaypalPaidDateTime"]);
-                soldProduct.PaypalPaidEmailPdf = Convert.ToString(reader["PaypalPaidEmailPdf"]);
-                soldProduct.eBayItemNumber = Convert.ToString(reader["eBayItemNumber"]);
-                soldProduct.eBaySoldDateTime = Convert.ToDateTime(reader["eBaySoldDateTime"]);
-                soldProduct.eBayItemName = Convert.ToString(reader["eBayItemName"]);
-                soldProduct.eBayListingQuality = Convert.ToInt16(reader["eBayListingQuality"]);
-                soldProduct.eBaySoldQuality = Convert.ToInt16(reader["eBaySoldQuality"]);
-                soldProduct.eBaySoldEmailPdf = Convert.ToString(reader["eBaySoldEmailPdf"]);
-                soldProduct.BuyerName = Convert.ToString(reader["BuyerName"]);
-                soldProduct.BuyerID = Convert.ToString(reader["BuyerID"]);
-                soldProduct.BuyerAddress1 = Convert.ToString(reader["BuyerAddress1"]);
-                soldProduct.BuyerAddress2 = Convert.ToString(reader["BuyerAddress2"]);
-                soldProduct.BuyerCity = Convert.ToString(reader["BuyerCity"]);
-                soldProduct.BuyerState = Convert.ToString(reader["BuyerState"]);
-                soldProduct.BuyerZip = Convert.ToString(reader["BuyerZip"]);
-                soldProduct.BuyerEmail = Convert.ToString(reader["BuyerEmail"]);
-                soldProduct.BuyerNote = Convert.ToString(reader["BuyerNote"]);
-                soldProduct.CostcoUrlNumber = Convert.ToString(reader["CostcoUrlNumber"]);
-                soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
-                soldProduct.CostcoPrice = Convert.ToDecimal(reader["CostcoPrice"]);
+                    soldProduct.PaypalTransactionID = Convert.ToString(reader["PaypalTransactionID"]);
+                    soldProduct.PaypalPaidDateTime = Convert.ToDateTime(reader["PaypalPaidDateTime"]);
+                    soldProduct.PaypalPaidEmailPdf = Convert.ToString(reader["PaypalPaidEmailPdf"]);
+                    soldProduct.eBayItemNumber = Convert.ToString(reader["eBayItemNumber"]);
+                    soldProduct.eBaySoldDateTime = Convert.ToDateTime(reader["eBaySoldDateTime"]);
+                    soldProduct.eBayItemName = Convert.ToString(reader["eBayItemName"]);
+                    //soldProduct.eBayListingQuality = Convert.ToInt16(reader["eBayListingQuality"]);
+                    soldProduct.eBaySoldQuality = Convert.ToInt16(reader["eBaySoldQuality"]);
+                    soldProduct.eBaySoldEmailPdf = Convert.ToString(reader["eBaySoldEmailPdf"]);
+                    soldProduct.BuyerName = Convert.ToString(reader["BuyerName"]);
+                    soldProduct.BuyerID = Convert.ToString(reader["BuyerID"]);
+                    soldProduct.BuyerAddress1 = Convert.ToString(reader["BuyerAddress1"]);
+                    soldProduct.BuyerAddress2 = Convert.ToString(reader["BuyerAddress2"]);
+                    soldProduct.BuyerCity = Convert.ToString(reader["BuyerCity"]);
+                    soldProduct.BuyerState = Convert.ToString(reader["BuyerState"]);
+                    soldProduct.BuyerZip = Convert.ToString(reader["BuyerZip"]);
+                    soldProduct.BuyerEmail = Convert.ToString(reader["BuyerEmail"]);
+                    soldProduct.BuyerNote = Convert.ToString(reader["BuyerNote"]);
+                    soldProduct.CostcoUrlNumber = Convert.ToString(reader["CostcoUrlNumber"]);
+                    soldProduct.CostcoUrl = Convert.ToString(reader["CostcoUrl"]);
+                    soldProduct.CostcoPrice = Convert.ToDecimal(reader["CostcoPrice"]);
 
-                //soldProduct.CostcoUrl = "http://www.costco.com/Vasanti-Gel-Matte-Lipstick-with-Lipline-Extreme-Lipliner.product.100243171.html";
+                    //soldProduct.CostcoUrl = "http://www.costco.com/Vasanti-Gel-Matte-Lipstick-with-Lipline-Extreme-Lipliner.product.100243171.html";
+                }
+                reader.Close();
+
+                cn.Close();
             }
-            reader.Close();
-
-            cn.Close();
-
-            OrderCostcoProduct(soldProduct);
         }
 
         private string SubstringInBetween(string input, string start, string end, bool bIncludeStart, bool bIncludeEnd)
