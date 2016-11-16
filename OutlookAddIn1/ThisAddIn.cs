@@ -142,58 +142,58 @@ namespace OutlookAddIn1
                     }
                     else if (mail.TaskSubject.Contains("You received a payment from your buyer"))
                     {
-                        string body = mail.HTMLBody;
+                        //string body = mail.HTMLBody;
 
-                        File.WriteAllText(@"C:\temp\temp.html", body);
+                        //File.WriteAllText(@"C:\temp\temp.html", body);
 
-                        body = body.Replace("\n", "");
-                        body = body.Replace("\t", "");
-                        body = body.Replace("\\", "");
-                        body = body.Replace("\"", "'");
+                        //body = body.Replace("\n", "");
+                        //body = body.Replace("\t", "");
+                        //body = body.Replace("\\", "");
+                        //body = body.Replace("\"", "'");
 
-                        ProcessPaymentReceivedEmail(body);
+                        //ProcessPaymentReceivedEmail(body);
                     }
                     else if (mail.TaskSubject.IndexOf("Your eBay item sold!") == 0)
                     {
-                        string body = mail.HTMLBody;
+                        //string body = mail.HTMLBody;
 
-                        File.WriteAllText(@"C:\temp\temp.html", body);
+                        //File.WriteAllText(@"C:\temp\temp.html", body);
 
-                        body = body.Replace("\n", "");
-                        body = body.Replace("\r", "");
-                        body = body.Replace("\t", "");
-                        body = body.Replace("\\", "");
-                        body = body.Replace("\"", "'");
+                        //body = body.Replace("\n", "");
+                        //body = body.Replace("\r", "");
+                        //body = body.Replace("\t", "");
+                        //body = body.Replace("\\", "");
+                        //body = body.Replace("\"", "'");
 
-                        ProcessItemSoldEmail(mail.TaskSubject, body);
+                        //ProcessItemSoldEmail(mail.TaskSubject, body);
                     }
                     else if (mail.TaskSubject.Contains("Your Costco.com Order Was Received"))
                     {
-                        string body = mail.HTMLBody;
+                        //string body = mail.HTMLBody;
 
-                        File.WriteAllText(@"C:\temp\temp.html", body);
+                        //File.WriteAllText(@"C:\temp\temp.html", body);
 
-                        body = body.Replace("\n", "");
-                        body = body.Replace("\t", "");
-                        body = body.Replace("\\", "");
-                        body = body.Replace("\"", "'");
+                        //body = body.Replace("\n", "");
+                        //body = body.Replace("\t", "");
+                        //body = body.Replace("\\", "");
+                        //body = body.Replace("\"", "'");
 
-                        //body = @"<html><head></head><body>" + body + @"</body></html>";
+                        ////body = @"<html><head></head><body>" + body + @"</body></html>";
 
-                        ProcessCostcoOrderEmail(body);
+                        //ProcessCostcoOrderEmail(body);
                     }
                     else if (mail.TaskSubject.Contains("Your Costco.com order has been shipped"))
                     {
-                        string body = mail.HTMLBody;
+                        //string body = mail.HTMLBody;
 
-                        File.WriteAllText(@"C:\temp\temp.html", body);
+                        //File.WriteAllText(@"C:\temp\temp.html", body);
 
-                        body = body.Replace("\n", "");
-                        body = body.Replace("\t", "");
-                        body = body.Replace("\\", "");
-                        body = body.Replace("\"", "'");
+                        //body = body.Replace("\n", "");
+                        //body = body.Replace("\t", "");
+                        //body = body.Replace("\\", "");
+                        //body = body.Replace("\"", "'");
 
-                        ProcessCostcoShipEmail(body);
+                        //ProcessCostcoShipEmail(body);
                     }
 
                     mail.UnRead = false;
