@@ -342,27 +342,25 @@ namespace OutlookAddIn1
             body = body.Replace("\t", "");
             body = body.Replace("\n", "");
 
-            string stItemId = SubstringInBetween(body, "Item Id:</td>", "</td>", false, true);
-            stItemId = SubstringEndBack(stItemId, "</td>", ">", false, false);
+            string stItemId = SubstringInBetween(body, "eBay Item Number:", "</td>", false, false);
+            //stItemId = SubstringEndBack(stItemId, "</td>", ">", false, false);
             stItemId = stItemId.Trim();
+
+            string eBayUrl = @"www.ebay.com/itm/" + stItemId;
 
             //string stListingUrl = SubstringEndBack(body, "Item Id:</td>", "<a href='", true, false);
             //stListingUrl = SubstringInBetween(stListingUrl, "<a href='", "target", false, false);
             //stListingUrl = stListingUrl.Trim();
 
-            string stPrice = SubstringInBetween(body, "Price:</td>", "</td>", false, true);
-            stPrice = SubstringEndBack(stPrice, "</td>", "$", false, false);
+            string stPrice = SubstringInBetween(body, "Price:", "</td>", false, false);
+            //stPrice = SubstringEndBack(stPrice, "</td>", "$", false, false);
             stPrice = stPrice.Replace("$", "");
             stPrice = stPrice.Trim();
 
-            string stEndTime = SubstringInBetween(body, "End time:</td>", "</td>", false, false);
-            stEndTime = TrimTags(stEndTime);
+            string stEndTime = SubstringInBetween(body, "End time:", "</td>", false, false);
+            stEndTime = stEndTime.Trim();
             string stTimeZone = stEndTime.Substring(stEndTime.LastIndexOf(' ') + 1, stEndTime.Length - stEndTime.LastIndexOf(' ') - 1);
             DateTime dtEndTime = Convert.ToDateTime(stEndTime.Replace(stTimeZone, timeZones[stTimeZone]));
-            //stEndTime = SubstringEndBack(stEndTime, "PDT", ">", false, true);
-            //stEndTime = stEndTime.Trim();
-            //string correctedTZ = stEndTime.Replace("PDT", "-0700");
-            //DateTime dtEndTime = Convert.ToDateTime(correctedTZ);
 
             sqlString = @"INSERT INTO eBay_CurrentListings
                             (Name, eBayListingName, eBayCategoryID, eBayItemNumber, eBayListingPrice, eBayDescription, 
